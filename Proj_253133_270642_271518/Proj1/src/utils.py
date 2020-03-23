@@ -146,4 +146,6 @@ def generate_pair_sets(nb):
 ######################################################################
 
 def plot_results(train_losses, train_errors, test_errors):
-    raise notImplementedError
+    print(train_losses.size())
+    print(train_errors.size())
+    print(test_errors.size())

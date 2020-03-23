@@ -5,7 +5,12 @@ from torch.nn import functional as F
 class Net(nn.Module):
     def __init__(self, architecture, skip_connections, batch_normalization):
         super(Net, self).__init__()
+
         #TODO: Implement structure
+        self.conv1 = nn.Conv2d(1, 8, kernel_size=3)
+        self.conv2 = nn.Conv2d(8, 16, kernel_size=3)
+        self.fc1 = nn.Linear(16, 200)
+        self.fc2 = nn.Linear(200, 10)
 
         self.test_error = []
         self.train_error = []
@@ -14,6 +19,10 @@ class Net(nn.Module):
 
     def forward(self, x):
         #TODO: Implement forward path
+        x = F.relu(F.max_pool2d(self.conv1(x), kernel_size=3))
+        x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2))
+        x = F.relu(self.fc1(x.view(-1, 16)))
+        x = self.fc2(x)
         return x
 
     def train(  self, \
@@ -26,7 +35,7 @@ class Net(nn.Module):
             sum_loss = 0
             # We do this with mini-batches
             for b in range(0, train_input.size(0), batch_size):
-                output = model(train_input.narrow(0, b, batch_size))
+                output = self(train_input.narrow(0, b, batch_size))
                 loss = criterion(output, train_target.narrow(0, b, batch_size))
                 sum_loss = sum_loss + loss.item()
                 optimizer.zero_grad()
@@ -52,12 +61,12 @@ class Net(nn.Module):
 
     def compute_error_rate(self, input, target, batch_size):
         error = 0.0
-        sample_size = 0
-        predicition = self.forward(input[::batch_size, :, :, :])
-        # Calculate test error
-        for x, t in zip(predicition, target[::batch_size, :]):
-            sample_size += 1
-            if torch.argmax(x) != torch.argmax(t):
-                error += 1.0
-        error /= sample_size
-        self.error.append(error)
+        for b in range(0, input.size(0), batch_size):
+            predicition = self(input.narrow(0, b, batch_size))
+            _, predicted_classes = predicition.max(1)
+            # Calculate test error
+            for pred, t in zip(predicted_classes, target.narrow(0, b, batch_size)):
+                if pred != t.item():
+                    error += 1
+        error /= input.size(0)
+        return error

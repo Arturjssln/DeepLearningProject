@@ -27,11 +27,11 @@ parser.add_argument('--bn',
 
 args = parser.parse_args()
 
-if agrs.loss is None:
-    loss == nn.MSELoss()
+if args.loss is None:
+    loss = nn.CrossEntropyLoss()
 else:
     if args.loss == "MSE":
-        loss == nn.MSELoss()
+        loss = nn.MSELoss()
     else:
         raise ValueError
 
@@ -42,8 +42,15 @@ train_input, train_target, train_classes, \
 test_input, test_target, test_classes = generate_pair_sets(args.datasize)
 print("# Data imported sucessfully\n")
 
+train_input = train_input.reshape(-1, 1, train_input.shape[-2], train_input.shape[-1])
+test_input = test_input.reshape(-1, 1, test_input.shape[-2], test_input.shape[-1])
+train_classes = train_classes.reshape(-1)
+#train_classes = train_classes.float()
+test_classes = test_classes.reshape(-1)
+#test_classes = test_classes.float()
+
 ## Model generation
-model = Net(architecture = args.architecture, skip_connections = args.residual, batch_normalization = agrs.bn)
+model = Net(architecture = args.architecture, skip_connections = args.residual, batch_normalization = args.bn)
 print("# Model created sucessfully\n")
 
 ## Model training
