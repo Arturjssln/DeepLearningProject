@@ -81,7 +81,6 @@ skip_connections = args.residual
 batch_normalization = args.bn
 
 
-
 test_errors = []
 train_errors = []
 train_losses = []

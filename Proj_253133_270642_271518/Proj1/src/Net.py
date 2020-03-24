@@ -5,6 +5,7 @@ from torch.nn import functional as F
 class Net(nn.Module):
     def __init__(self, architecture, *param):
         '''
+        Initialization
         param contains :
         (usefull parameters will have values, other will be None)
         nb_classes, nb_residual_blocks, nb_channels,
@@ -48,7 +49,7 @@ class Net(nn.Module):
 
         # ResNet architecture
         elif architecture is 'resnet':
-
+            self.batch_normalization = batch_normalization
             self.conv = nn.Conv2d(1, nb_channels, kernel_size = kernel_size, padding = (kernel_size - 1) // 2)
             if batch_normalization:
                 self.bn = nn.BatchNorm2d(nb_channels)
@@ -63,6 +64,9 @@ class Net(nn.Module):
             raise NotImplementedError
 
     def forward(self, x):
+        '''
+        Forward path
+        '''
         # default architecture
         if self.architecture is None:
             #TODO: Implement default forward path
@@ -77,7 +81,7 @@ class Net(nn.Module):
 
         # ResNet architecture
         elif self.architecture is 'resnet':
-            if batch_normalization:
+            if self.batch_normalization:
                 x = F.relu(self.bn(self.conv(x)))
             else:
                 x = F.relu(self.conv(x))
@@ -95,7 +99,9 @@ class Net(nn.Module):
                 train_input, train_target, test_input = None, test_target = None, \
                 batch_size = 10, epoch = 25, \
                 eta = 1e-1, criterion = nn.MSELoss(), print_skip = 5):
-
+        '''
+        Training method
+        '''
         optimizer = torch.optim.SGD(self.parameters(), lr = eta) # TO SEE WHICH OPTIMIZER
         for e in range(epoch):
             sum_loss = 0
@@ -126,6 +132,9 @@ class Net(nn.Module):
         print("BEST SCORE --> Epoch #{:d}: train_error: {:.02f}%, test_error: {:.02f}%".format(self.best_epoch, self.train_error[self.best_epoch]*100, self.test_error[self.best_epoch]*100))
 
     def compute_error_rate(self, input, target, batch_size):
+        '''
+        Computing error rate givin an input and its target
+        '''
         error = 0.0
         for b in range(0, input.size(0), batch_size):
             predicition = self(input.narrow(0, b, batch_size))
@@ -141,7 +150,12 @@ class Net(nn.Module):
 
 class ResNetBlock(nn.Module):
     def __init__(self, nb_channels, kernel_size, skip_connections, batch_normalization):
+        '''
+        Initialization of a unit block of ResNet
+        '''
         super(ResNetBlock, self).__init__()
+        self.skip_connections = skip_connections
+        self.batch_normalization = batch_normalization
 
         self.conv1 = nn.Conv2d(nb_channels, nb_channels,
                                kernel_size = kernel_size,
@@ -156,14 +170,17 @@ class ResNetBlock(nn.Module):
             self.bn2 = nn.BatchNorm2d(nb_channels)
 
     def forward(self, x):
+        '''
+        Forward path
+        '''
         y = self.conv1(x)
-        if batch_normalization:
+        if self.batch_normalization:
             y = self.bn1(y)
         y = F.relu(y)
         y = self.conv2(y)
-        if batch_normalization:
+        if self.batch_normalization:
             y = self.bn2(y)
-        if not skip_connections:
+        if not self.skip_connections:
             y = y + x
         y = F.relu(y)
 
