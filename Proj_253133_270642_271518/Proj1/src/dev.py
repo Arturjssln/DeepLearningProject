@@ -15,7 +15,7 @@ parser.add_argument('--architecture',
 
 parser.add_argument('--loss',
                     type = str, default = None,
-                    help = 'Loss used to train Neural Network (can be MSE, ????; default: MSE)')
+                    help = 'Loss used to train Neural Network (can be MSE, ????; default: crossentropy)')
 
 parser.add_argument('--residual',
                     action='store_true', default=False,
@@ -36,13 +36,15 @@ parser.add_argument('--deep',
 
 args = parser.parse_args()
 
-if args.loss is None:
+## Determine loss used
+if args.loss is None or args.loss is 'crossentropy':
+    # Default loss
     loss = nn.CrossEntropyLoss()
+elif args.loss is 'MSE':
+    # MSE loss
+    loss = nn.MSELoss()
 else:
-    if args.loss == "MSE":
-        loss = nn.MSELoss()
-    else:
-        raise ValueError
+    raise ValueError
 
 ## Data generation
 train_input, train_target, train_classes, \
@@ -62,9 +64,8 @@ nb_linear_layers = None
 nb_nodes = None
 # Number of repetition
 rep = 10
-# parameters for Neural Network
+# Parameters for Neural Network
 nb_classes = 10
-
 if args.architecture is 'linear':
     nb_nodes = args.nodes
     if args.deep:
@@ -87,7 +88,6 @@ train_losses = []
 
 for i in range(rep):
     ## Model declaration
-
     model = Net(args.architecture, nb_classes, nb_residual_blocks, \
                 nb_channels, kernel_size, skip_connections, batch_normalization, \
                 nb_linear_layers, nb_nodes)
