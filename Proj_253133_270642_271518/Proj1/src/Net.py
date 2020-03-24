@@ -8,7 +8,8 @@ class Net(nn.Module):
         param contains :
         (usefull parameters will have values, other will be None)
         nb_classes, nb_residual_blocks, nb_channels,
-        kernel_size, skip_connections, batch_normalization, nb_linear_layers
+        kernel_size, skip_connections, batch_normalization,
+        nb_linear_layers, nb_nodes
         '''
 
         super(Net, self).__init__()
@@ -22,7 +23,7 @@ class Net(nn.Module):
         nb_classes, nb_residual_blocks, \
         nb_channels, kernel_size, \
         skip_connections, batch_normalization, \
-        nb_linear_layers = param
+        nb_linear_layers, nb_nodes = param
 
 
         # default architecture
@@ -36,11 +37,14 @@ class Net(nn.Module):
         # Linear fully connected architecture
         elif architecture is 'linear':
             raise NotImplementedError
-            # don't know if this is working
-            self.layers = nn.Sequential(
-                nn.Linear(256,512), nn.ReLU(),
-                *((nn.Linear(512,512), nn.ReLU()) for _ in range(nb_linear_layers - 1)),
-                nn.Linear(512,10))
+            modules = []
+            modules.append(nn.Linear(256, nb_nodes))
+            modules.append(nn.ReLU())
+            for _ in range(nb_linear_layers - 1):
+                modules.append(nn.Linear(nb_nodes, nb_nodes))
+                modules.append(nn.ReLU())
+            modules.append(nn.Linear(nb_nodes, 10))
+            self.layers = nn.Sequential(*modules)
 
         # ResNet architecture
         elif architecture is 'resnet':
@@ -69,7 +73,7 @@ class Net(nn.Module):
 
         # Linear fully connected architecture
         elif self.architecture is 'linear':
-            x = self.layers(x)
+            x = self.layers(x.view(-1, 256))
 
         # ResNet architecture
         elif self.architecture is 'resnet':
@@ -92,7 +96,7 @@ class Net(nn.Module):
                 batch_size = 10, epoch = 25, \
                 eta = 1e-1, criterion = nn.MSELoss(), print_skip = 5):
 
-        optimizer = torch.optim.SGD(self.parameters(), lr = eta)
+        optimizer = torch.optim.SGD(self.parameters(), lr = eta) # TO SEE WHICH OPTIMIZER
         for e in range(epoch):
             sum_loss = 0
             # We do this with mini-batches
