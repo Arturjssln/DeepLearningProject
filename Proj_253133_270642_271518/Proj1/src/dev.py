@@ -25,6 +25,10 @@ parser.add_argument('--bn',
                     action='store_true', default=False,
                     help = 'Use batch normalization (default False)')
 
+parser.add_argument('--deep',
+                    action='store_true', default=False,
+                    help = 'Use deep Neural Network (ignored if architecture is not linear; default False)')
+
 args = parser.parse_args()
 
 if args.loss is None:
@@ -45,8 +49,31 @@ test_input = test_input.reshape(-1, 1, test_input.shape[-2], test_input.shape[-1
 train_classes = train_classes.reshape(-1)
 test_classes = test_classes.reshape(-1)
 
+## Defining parameters
+nb_residual_blocks = None
+nb_channels = None
+kernel_size = None
+nb_linear_layers = None
 # Number of repetition
 rep = 10
+# parameters for Neural Network
+nb_classes = 10
+
+if args.architecture is 'linear':
+    if args.deep:
+        nb_linear_layers = 5
+    else:
+        nb_linear_layers = 1
+
+if args.architecture is 'resnet':
+    nb_residual_blocks = 0 # TO DEFINE
+    nb_channels = 0 # TO DEFINE
+    kernel_size = 0 # TO DEFINE
+
+skip_connections = args.residual
+batch_normalization = args.bn
+
+
 
 test_errors = []
 train_errors = []
@@ -54,7 +81,10 @@ train_losses = []
 
 for i in range(rep):
     ## Model declaration
-    model = Net(architecture = args.architecture, skip_connections = args.residual, batch_normalization = args.bn)
+
+    model = Net(args.architecture, nb_classes, nb_residual_blocks, \
+                nb_channels, kernel_size, skip_connections, batch_normalization, \
+                nb_linear_layers)
     print("# Model {} created sucessfully\n".format(i))
 
     ## Model Training

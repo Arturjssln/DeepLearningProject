@@ -25,6 +25,10 @@ parser.add_argument('--bn',
                     action='store_true', default=False,
                     help = 'Use batch normalization (default False)')
 
+parser.add_argument('--deep',
+                    action='store_true', default=False,
+                    help = 'Use deep Neural Network (ignored if architecture is not linear; default False)')
+
 args = parser.parse_args()
 
 if args.loss is None:

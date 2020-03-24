@@ -3,26 +3,88 @@ from torch import nn
 from torch.nn import functional as F
 
 class Net(nn.Module):
-    def __init__(self, architecture, skip_connections, batch_normalization):
+    def __init__(self, architecture, *param):
+        '''
+        param contains :
+        (usefull parameters will have values, other will be None)
+        nb_classes, nb_residual_blocks, nb_channels,
+        kernel_size, skip_connections, batch_normalization, nb_linear_layers
+        '''
+
         super(Net, self).__init__()
-
-        #TODO: Implement structure
-        self.conv1 = nn.Conv2d(1, 8, kernel_size=3)
-        self.conv2 = nn.Conv2d(8, 16, kernel_size=3)
-        self.fc1 = nn.Linear(16, 200)
-        self.fc2 = nn.Linear(200, 10)
-
         self.test_error = []
         self.train_error = []
         self.sumloss = []
         self.best_epoch = 0
+        self.architecture = architecture
+
+        # Usefull parameters will have values, other will be None
+        nb_classes, nb_residual_blocks, \
+        nb_channels, kernel_size, \
+        skip_connections, batch_normalization, \
+        nb_linear_layers = param
+
+
+        # default architecture
+        if architecture is None:
+            #TODO: Implement default structure
+            self.conv1 = nn.Conv2d(1, 8, kernel_size=3)
+            self.conv2 = nn.Conv2d(8, 16, kernel_size=3)
+            self.fc1 = nn.Linear(16, 200)
+            self.fc2 = nn.Linear(200, nb_classes)
+
+        # Linear fully connected architecture
+        elif architecture is 'linear':
+            raise NotImplementedError
+            # don't know if this is working
+            self.layers = nn.Sequential(
+                nn.Linear(256,512), nn.ReLU(),
+                *((nn.Linear(512,512), nn.ReLU()) for _ in range(nb_linear_layers - 1)),
+                nn.Linear(512,10))
+
+        # ResNet architecture
+        elif architecture is 'resnet':
+
+            self.conv = nn.Conv2d(1, nb_channels, kernel_size = kernel_size, padding = (kernel_size - 1) // 2)
+            if batch_normalization:
+                self.bn = nn.BatchNorm2d(nb_channels)
+            self.resnet_blocks = nn.Sequential(
+                *(ResNetBlock(nb_channels, kernel_size, skip_connections, batch_normalization) for _ in range(nb_residual_blocks))
+            )
+            self.fc = nn.Linear(nb_channels, nb_classes)
+
+        # UNet architecture
+        elif architecture is 'unet':
+            # why not ?
+            raise NotImplementedError
 
     def forward(self, x):
-        #TODO: Implement forward path
-        x = F.relu(F.max_pool2d(self.conv1(x), kernel_size=3))
-        x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2))
-        x = F.relu(self.fc1(x.view(-1, 16)))
-        x = self.fc2(x)
+        # default architecture
+        if self.architecture is None:
+            #TODO: Implement default forward path
+            x = F.relu(F.max_pool2d(self.conv1(x), kernel_size=3))
+            x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2))
+            x = F.relu(self.fc1(x.view(-1, 16)))
+            x = self.fc2(x)
+
+        # Linear fully connected architecture
+        elif self.architecture is 'linear':
+            x = self.layers(x)
+
+        # ResNet architecture
+        elif self.architecture is 'resnet':
+            if batch_normalization:
+                x = F.relu(self.bn(self.conv(x)))
+            else:
+                x = F.relu(self.conv(x))
+            x = self.resnet_blocks(x)
+            x = F.avg_pool2d(x, 32).view(x.size(0), -1)
+            x = self.fc(x)
+
+        # UNet architecture
+        elif self.architecture is 'unet':
+            raise NotImplementedError
+
         return x
 
     def train(  self, \
@@ -70,3 +132,35 @@ class Net(nn.Module):
                     error += 1
         error /= input.size(0)
         return error
+
+
+
+class ResNetBlock(nn.Module):
+    def __init__(self, nb_channels, kernel_size, skip_connections, batch_normalization):
+        super(ResNetBlock, self).__init__()
+
+        self.conv1 = nn.Conv2d(nb_channels, nb_channels,
+                               kernel_size = kernel_size,
+                               padding = (kernel_size - 1) // 2)
+        if batch_normalization:
+            self.bn1 = nn.BatchNorm2d(nb_channels)
+
+        self.conv2 = nn.Conv2d(nb_channels, nb_channels,
+                               kernel_size = kernel_size,
+                               padding = (kernel_size - 1) // 2)
+        if batch_normalization:
+            self.bn2 = nn.BatchNorm2d(nb_channels)
+
+    def forward(self, x):
+        y = self.conv1(x)
+        if batch_normalization:
+            y = self.bn1(y)
+        y = F.relu(y)
+        y = self.conv2(y)
+        if batch_normalization:
+            y = self.bn2(y)
+        if not skip_connections:
+            y = y + x
+        y = F.relu(y)
+
+        return y
