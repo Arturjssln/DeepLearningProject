@@ -64,6 +64,8 @@ nb_linear_layers = None
 nb_nodes = None
 # Number of repetition
 rep = 10
+# Learning rate
+eta = 1e-1
 # Parameters for Neural Network
 nb_classes = 10
 if args.architecture is 'linear':
@@ -96,9 +98,9 @@ for i in range(rep):
     ## Model Training
     print("# Starting training...\n")
     model.train(train_input, train_classes, test_input, test_classes, \
-                eta = 1e-1, criterion = loss)
+                eta = eta, criterion = loss)
     print("# Training done.\n")
-
+    print("------------------------------------------------------------- \n")
     ## Results saving
     test_errors.append(model.test_error)
     train_errors.append(model.train_error)
