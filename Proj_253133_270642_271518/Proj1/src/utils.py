@@ -146,6 +146,21 @@ def generate_pair_sets(nb):
 ######################################################################
 
 def plot_results(train_losses, train_errors, test_errors):
-    print(train_losses.size())
-    print(train_errors.size())
-    print(test_errors.size())
+    import matplotlib.pyplot as plt
+
+    epoch = len(train_losses[0])
+
+    train_losses = torch.FloatTensor(train_losses)
+    train_errors = torch.FloatTensor(train_errors)
+    test_errors = torch.FloatTensor(test_errors)
+
+    plt.style.use('seaborn-whitegrid')
+    plt.subplot(121)
+    plt.errorbar(range(epoch), train_losses.mean(dim=0),
+                 yerr=train_losses.std(dim=0), capsize=5, fmt='.', ls='-')
+    plt.subplot(122)
+    plt.errorbar(range(epoch), train_errors.mean(dim=0),
+                 yerr=train_errors.std(dim=0), color='blue', capsize=5, fmt='.', ls='-')
+    plt.errorbar(range(epoch), test_errors.mean(dim=0),
+                 yerr=test_errors.std(dim=0), color='red', capsize=5, fmt='.', ls='-')
+    plt.show()

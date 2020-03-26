@@ -127,7 +127,7 @@ class Net(nn.Module):
 
             #Save best epoch
             if self.test_error[self.best_epoch] > self.test_error[-1]:
-                self.best_epoch = e;
+                self.best_epoch = e
 
         print("BEST SCORE --> Epoch #{:d}: train_error: {:.02f}%, test_error: {:.02f}%".format(self.best_epoch, self.train_error[self.best_epoch]*100, self.test_error[self.best_epoch]*100))
 
