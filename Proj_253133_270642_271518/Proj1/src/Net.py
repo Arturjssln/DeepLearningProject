@@ -10,7 +10,7 @@ class Net(nn.Module):
         (usefull parameters will have values, other will be None)
         nb_classes, nb_residual_blocks, nb_channels,
         kernel_size, skip_connections, batch_normalization,
-        nb_linear_layers, nb_nodes
+        nb_linear_layers, nb_nodes, optimizer
         '''
 
         super(Net, self).__init__()
@@ -24,8 +24,9 @@ class Net(nn.Module):
         nb_classes, nb_residual_blocks, \
         nb_channels, kernel_size, \
         skip_connections, batch_normalization, \
-        nb_linear_layers, nb_nodes = param
+        nb_linear_layers, nb_nodes, optimizer = param
 
+        self.optimizer = optimizer
 
         # default architecture
         if architecture is None:
@@ -36,10 +37,9 @@ class Net(nn.Module):
             self.fc2 = nn.Linear(200, nb_classes)
 
         # Linear fully connected architecture
-        elif architecture is 'linear':
-            raise NotImplementedError
+        elif architecture == 'linear':
             modules = []
-            modules.append(nn.Linear(256, nb_nodes))
+            modules.append(nn.Linear(14**2, nb_nodes))
             modules.append(nn.ReLU())
             for _ in range(nb_linear_layers - 1):
                 modules.append(nn.Linear(nb_nodes, nb_nodes))
@@ -48,7 +48,7 @@ class Net(nn.Module):
             self.layers = nn.Sequential(*modules)
 
         # ResNet architecture
-        elif architecture is 'resnet':
+        elif architecture == 'resnet':
             self.batch_normalization = batch_normalization
             self.conv = nn.Conv2d(1, nb_channels, kernel_size = kernel_size, padding = (kernel_size - 1) // 2)
             if batch_normalization:
@@ -59,7 +59,7 @@ class Net(nn.Module):
             self.fc = nn.Linear(nb_channels, nb_classes)
 
         # UNet architecture
-        elif architecture is 'unet':
+        elif architecture == 'unet':
             # why not ?
             raise NotImplementedError
 
@@ -76,11 +76,11 @@ class Net(nn.Module):
             x = self.fc2(x)
 
         # Linear fully connected architecture
-        elif self.architecture is 'linear':
-            x = self.layers(x.view(-1, 256))
+        elif self.architecture == 'linear':
+            x = self.layers(x.view(-1, 14**2))
 
         # ResNet architecture
-        elif self.architecture is 'resnet':
+        elif self.architecture == 'resnet':
             if self.batch_normalization:
                 x = F.relu(self.bn(self.conv(x)))
             else:
@@ -90,7 +90,7 @@ class Net(nn.Module):
             x = self.fc(x)
 
         # UNet architecture
-        elif self.architecture is 'unet':
+        elif self.architecture == 'unet':
             raise NotImplementedError
 
         return x
@@ -98,11 +98,17 @@ class Net(nn.Module):
     def train(  self, \
                 train_input, train_target, test_input = None, test_target = None, \
                 batch_size = 10, epoch = 25, \
-                eta = 1e-1, criterion = nn.MSELoss(), print_skip = 5):
+                eta = 1e-1, criterion = nn.CrossEntropyLoss(), print_skip = 5):
         '''
         Training method
         '''
-        optimizer = torch.optim.SGD(self.parameters(), lr = eta) # TO SEE WHICH OPTIMIZER
+        if self.optimizer is not None:
+            if self.optimizer == 'SGD':
+                optimizer = torch.optim.SGD(self.parameters(), lr = eta)
+            elif self.optimizer == 'Adam':
+                optimizer = torch.optim.Adam(self.parameters(), lr = eta)
+            else:
+                raise NameError('Unknown optimizer')
         for e in range(epoch):
             sum_loss = 0
             # We do this with mini-batches
@@ -110,9 +116,17 @@ class Net(nn.Module):
                 output = self(train_input.narrow(0, b, batch_size))
                 loss = criterion(output, train_target.narrow(0, b, batch_size))
                 sum_loss = sum_loss + loss.item()
-                optimizer.zero_grad()
+                if self.optimizer is None:
+                    self.zero_grad()
+                else:
+                    optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
+                if self.optimizer is None:
+                    with torch.no_grad():
+                        for p in self.parameters():
+                            p -= eta * p.grad
+                else:
+                    optimizer.step()
 
             self.sumloss.append(sum_loss)
 
@@ -124,7 +138,7 @@ class Net(nn.Module):
                 print("------------> Train error rate : {:.02f}% ".format(self.train_error[-1]*100))
                 if test_input is not None and test_target is not None:
                     print("------------> Test error rate : {:.02f}% ".format(self.test_error[-1]*100))
-
+                print("--------------------------------------------")
             #Save best epoch
             if self.test_error[self.best_epoch] > self.test_error[-1]:
                 self.best_epoch = e
