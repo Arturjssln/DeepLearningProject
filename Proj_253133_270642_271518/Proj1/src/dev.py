@@ -28,8 +28,12 @@ parser.add_argument('--bn',
                     help = 'Use batch normalization (default: False)')
 
 parser.add_argument('--nodes',
-                    type = int, default = 512,
-                    help = 'Number of nodes (ignored if architecture is not linear; default: 512)')
+                    type = int, default = 32,
+                    help = 'Number of nodes (ignored if architecture is not linear; default: 32)')
+
+parser.add_argument('--epoch',
+                    type = int, default = 25,
+                    help = 'Number of epoch (default: 25)')
 
 parser.add_argument('--deep',
                     action='store_true', default=False,
@@ -56,7 +60,7 @@ else:
 
 ## Data generation
 train_input, train_target, train_classes, \
-test_input, test_target, test_classes = generate_pair_sets(args.datasize)
+test_input, test_target, test_classes = generate_pair_sets(args.datasize, normalize = True)
 print("** Data imported sucessfully **\n")
 
 train_input = train_input.reshape(-1, 1, train_input.shape[-2], train_input.shape[-1])
@@ -87,29 +91,24 @@ if args.architecture == 'linear':
     else:
         nb_linear_layers = 1 # TO DEFINE
 
-    print("*  Linear neural network with {} fully connected hidden layer.".format(nb_linear_layers))
+    print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 
 elif args.architecture == 'resnet':
-    nb_residual_blocks = 0 # TO DEFINE
-    nb_channels = 0 # TO DEFINE
-    kernel_size = 0 # TO DEFINE
+    raise NotImplementedError
+    nb_residual_blocks = 3 # TO DEFINE
+    nb_channels = 3 # TO DEFINE
+    kernel_size = 2 # TO DEFINE
     optimizer = 'SGD'
     print(  "*  Resnet architecture neural network with {} \
             residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
 
 elif args.architecture == 'lenet' or args.architecture == 'alexnet':
-    raise NotImplementedError
-
-elif args.architecture == 'inception':
-    # Use batch normalization
-    args.bn = True
-    raise NotImplementedError
-
-elif args.architecture == 'inceptionresnet':
-    raise NotImplementedError
+    args.optimizer = 'SGD'
+    print("*  LeNet neural network.")
 
 elif args.architecture == 'xception':
-    raise NotImplementedError
+    args.bn = True
+    print("*  Xception neural network.")
 
 else:
     args.architecture = None
@@ -126,14 +125,15 @@ if skip_connections:
 
 if args.optimizer is None:
     print("*  No optimizer choosen --> using batch stochastic gradient descend.")
-elif args.optimizer == 'MSE':
-    print("*  MSE Optimizer used.")
+elif args.optimizer == 'SGD':
+    print("*  SGD Optimizer used.")
 elif args.optimizer == 'Adam':
     print("*  Adam Optimizer used.")
 else:
     raise ValueError("Unknown optimizer")
 
 
+goal_errors = []
 test_errors = []
 train_errors = []
 train_losses = []
@@ -147,15 +147,16 @@ for i in range(rep):
 
     ## Model Training
     print("** Starting training... **")
-    model.train(train_input, train_classes, test_input, test_classes, \
-                eta = eta, criterion = loss)
+    model.train(train_input, train_classes, test_input, test_classes, test_target, \
+                epoch = args.epoch, eta = eta, criterion = loss)
     print("** Training done. **\n")
 
     ## Results saving
+    goal_errors.append(model.test_final_error)
     test_errors.append(model.test_error)
     train_errors.append(model.train_error)
     train_losses.append(model.sumloss)
     print("**************************************************************")
 
 ## Ploting results
-plot_results(train_losses, train_errors, test_errors)
+plot_results(train_losses, train_errors, test_errors, goal_errors)

@@ -68,7 +68,7 @@ def mnist_to_pairs(nb, input, target):
 
 ######################################################################
 
-def generate_pair_sets(nb):
+def generate_pair_sets(nb, normalize = False):
     train_set = datasets.MNIST(data_dir + '/mnist/', train = True, download = True)
     train_input = train_set.data.view(-1, 1, 28, 28).float()
     train_target = train_set.targets
@@ -77,12 +77,17 @@ def generate_pair_sets(nb):
     test_input = test_set.data.view(-1, 1, 28, 28).float()
     test_target = test_set.targets
 
+    if normalize:
+        mu, std = train_input.mean(), train_input.std()
+        train_input.sub_(mu).div_(std)
+        test_input.sub_(mu).div_(std)
+
     return mnist_to_pairs(nb, train_input, train_target) + \
            mnist_to_pairs(nb, test_input, test_target)
 
 ######################################################################
 
-def plot_results(train_losses, train_errors, test_errors):
+def plot_results(train_losses, train_errors, test_errors, goal_errors):
     import matplotlib.pyplot as plt
 
     epoch = len(train_losses[0])
@@ -90,14 +95,23 @@ def plot_results(train_losses, train_errors, test_errors):
     train_losses = torch.FloatTensor(train_losses)
     train_errors = torch.FloatTensor(train_errors)
     test_errors = torch.FloatTensor(test_errors)
+    goal_errors = torch.FloatTensor(goal_errors)
 
     plt.style.use('seaborn-whitegrid')
     plt.subplot(121)
     plt.errorbar(range(epoch), train_losses.mean(dim=0),
-                 yerr=train_losses.std(dim=0), capsize=5, fmt='.', ls='-')
+                 yerr=train_losses.std(dim=0), capsize=5, fmt='.', ls='--')
+    plt.legend(['Train loss'])
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
     plt.subplot(122)
-    plt.errorbar(range(epoch), train_errors.mean(dim=0),
-                 yerr=train_errors.std(dim=0), color='blue', capsize=5, fmt='.', ls='-')
-    plt.errorbar(range(epoch), test_errors.mean(dim=0),
-                 yerr=test_errors.std(dim=0), color='red', capsize=5, fmt='.', ls='-')
+    plt.errorbar(range(epoch), train_errors.mean(dim=0)*100,
+                 yerr=train_errors.std(dim=0)*100, color='blue', capsize=5, fmt='.', ls='--')
+    plt.errorbar(range(epoch), test_errors.mean(dim=0)*100,
+                 yerr=test_errors.std(dim=0)*100, color='red', capsize=5, fmt='.', ls='--')
+    plt.errorbar(range(epoch), goal_errors.mean(dim=0)*100,
+                 yerr=goal_errors.std(dim=0)*100, color='green', capsize=5, fmt='.', ls='--')
+    plt.legend(['Train', 'Test (predict digit)', 'Test (predict comparison)'])
+    plt.xlabel('Epoch')
+    plt.ylabel('Error rate (in %)')
     plt.show()
