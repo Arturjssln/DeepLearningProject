@@ -49,6 +49,7 @@ if args.loss is None or args.loss == 'crossentropy':
 elif args.loss == 'MSE':
     # MSE loss
     loss = nn.MSELoss()
+    raise NotImplementedError
 else:
     raise ValueError
 
@@ -88,13 +89,31 @@ if args.architecture == 'linear':
 
     print("*  Linear neural network with {} fully connected hidden layer.".format(nb_linear_layers))
 
-if args.architecture == 'resnet':
+elif args.architecture == 'resnet':
     nb_residual_blocks = 0 # TO DEFINE
     nb_channels = 0 # TO DEFINE
     kernel_size = 0 # TO DEFINE
     optimizer = 'SGD'
     print(  "*  Resnet architecture neural network with {} \
             residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
+
+elif args.architecture == 'lenet' or args.architecture == 'alexnet':
+    raise NotImplementedError
+
+elif args.architecture == 'inception':
+    # Use batch normalization
+    args.bn = True
+    raise NotImplementedError
+
+elif args.architecture == 'inceptionresnet':
+    raise NotImplementedError
+
+elif args.architecture == 'xception':
+    raise NotImplementedError
+
+else:
+    args.architecture = None
+    print("*  Default neural network architecture chosen.")
 
 
 skip_connections = args.residual

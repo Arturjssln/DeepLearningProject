@@ -58,10 +58,20 @@ class Net(nn.Module):
             )
             self.fc = nn.Linear(nb_channels, nb_classes)
 
-        # UNet architecture
-        elif architecture == 'unet':
-            # why not ?
+        elif architecture == 'lenet' or architecture == 'alexnet':
             raise NotImplementedError
+
+        elif architecture == 'inception':
+            raise NotImplementedError
+
+        elif architecture == 'inceptionresnet':
+            raise NotImplementedError
+
+        elif architecture == 'xception':
+            raise NotImplementedError
+
+        else:
+            raise NameError('Unknown architecture')
 
     def forward(self, x):
         '''
@@ -89,9 +99,20 @@ class Net(nn.Module):
             x = F.avg_pool2d(x, 32).view(x.size(0), -1)
             x = self.fc(x)
 
-        # UNet architecture
-        elif self.architecture == 'unet':
+        elif architecture == 'lenet' or architecture == 'alexnet':
             raise NotImplementedError
+
+        elif architecture == 'inception':
+            raise NotImplementedError
+
+        elif architecture == 'inceptionresnet':
+            raise NotImplementedError
+
+        elif architecture == 'xception':
+            raise NotImplementedError
+
+        else:
+            raise NameError('Unknown architecture')
 
         return x
 
