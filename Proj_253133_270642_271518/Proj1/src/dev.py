@@ -78,7 +78,7 @@ nb_linear_layers = None
 nb_nodes = None
 
 # Number of repetition
-rep = 1
+rep = 10
 # Learning rate
 eta = 1e-1
 # Parameters for Neural Network
@@ -94,8 +94,8 @@ if args.architecture == 'linear':
     print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 
 elif args.architecture == 'resnet':
-    nb_residual_blocks = 5 # TO DEFINE
-    nb_channels = 16 # TO DEFINE
+    nb_residual_blocks = 1 # TO DEFINE
+    nb_channels = 6 # TO DEFINE
     kernel_size = 3 # TO DEFINE but minimum 3 (included)
     optimizer = 'SGD'
     print(  "*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))

@@ -1,0 +1,50 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: DL - resnet",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/dev.py",
+            "console": "integratedTerminal",
+            "args": ["--architecture", "resnet"]
+        },
+        {
+            "name": "Python: DL - resnet + BN",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/dev.py",
+            "console": "integratedTerminal",
+            "args": [
+                        "--architecture", "resnet",
+                        "--bn"
+                    ]
+        },
+        {
+            "name": "Python: DL - resnet + residual",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/dev.py",
+            "console": "integratedTerminal",
+            "args": [
+                        "--architecture", "resnet",
+                        "--residual"
+                    ]
+        },
+        {
+            "name": "Python: DL - resnet + BN + residual",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/dev.py",
+            "console": "integratedTerminal",
+            "args": [
+                        "--architecture", "resnet",
+                        "--bn",
+                        "--residual",
+                    ]
+        }
+    ]
+}
