@@ -224,7 +224,7 @@ class Net(nn.Module):
             self.test_error.append(self.compute_error_rate(test_input, test_target, batch_size))
             self.test_final_error.append(self.compute_error_rate(test_input, test_target_final, batch_size, pair = True))
 
-            train_time_avg_epoch = (train_time_avg_epoch * e-1) + (time.time() - epoch_start_time) / e
+            train_time_avg_epoch = ((train_time_avg_epoch * e) + (time.time() - epoch_start_time)) / (e+1)
             remaining_time  = (epoch - e) * train_time_avg_epoch
 
             if e%print_skip == 0:
