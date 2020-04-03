@@ -115,3 +115,13 @@ def plot_results(train_losses, train_errors, test_errors, goal_errors):
     plt.xlabel('Epoch')
     plt.ylabel('Error rate (in %)')
     plt.show()
+
+
+def count_parameters(model):
+    pp=0
+    for p in list(model.parameters()):
+        nn=1
+        for s in list(p.size()):
+            nn = nn*s
+        pp += nn
+    return pp
