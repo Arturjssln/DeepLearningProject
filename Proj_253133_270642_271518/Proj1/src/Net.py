@@ -126,7 +126,7 @@ class Net(nn.Module):
             else:
                 x = F.relu(self.conv(x))
             x = self.resnet_blocks(x)
-            x = F.avg_pool2d(x, 32).view(x.size(0), -1)
+            x = F.avg_pool2d(x, 14).view(x.size(0), -1)
             x = self.fc(x)
 
         elif self.architecture == 'lenet' or self.architecture == 'alexnet':
@@ -198,6 +198,7 @@ class Net(nn.Module):
             # We do this with mini-batches
             for b in range(0, train_input.size(0), batch_size):
                 output = self(train_input.narrow(0, b, batch_size))
+
                 loss = criterion(output, train_target.narrow(0, b, batch_size))
                 sum_loss = sum_loss + loss.item()
                 if self.optimizer is None:

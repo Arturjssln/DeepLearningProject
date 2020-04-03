@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from utils import generate_pair_sets, plot_results
+from utils import generate_pair_sets, plot_results, count_parameters
 from Net import Net
 
 import argparse
@@ -62,7 +62,7 @@ else:
 train_input, train_target, train_classes, \
 test_input, test_target, test_classes = generate_pair_sets(args.datasize, normalize = True)
 print("** Data imported sucessfully **\n")
-
+print(train_input.shape)
 train_input = train_input.reshape(-1, 1, train_input.shape[-2], train_input.shape[-1])
 test_input = test_input.reshape(-1, 1, test_input.shape[-2], test_input.shape[-1])
 train_classes = train_classes.reshape(-1)
@@ -78,7 +78,7 @@ nb_linear_layers = None
 nb_nodes = None
 
 # Number of repetition
-rep = 10
+rep = 1
 # Learning rate
 eta = 1e-1
 # Parameters for Neural Network
@@ -94,13 +94,11 @@ if args.architecture == 'linear':
     print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 
 elif args.architecture == 'resnet':
-    raise NotImplementedError
-    nb_residual_blocks = 3 # TO DEFINE
-    nb_channels = 3 # TO DEFINE
-    kernel_size = 2 # TO DEFINE
+    nb_residual_blocks = 5 # TO DEFINE
+    nb_channels = 16 # TO DEFINE
+    kernel_size = 3 # TO DEFINE but minimum 3 (included)
     optimizer = 'SGD'
-    print(  "*  Resnet architecture neural network with {} \
-            residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
+    print(  "*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
 
 elif args.architecture == 'lenet' or args.architecture == 'alexnet':
     args.optimizer = 'SGD'
@@ -144,11 +142,12 @@ for i in range(rep):
                 nb_channels, kernel_size, skip_connections, batch_normalization, \
                 nb_linear_layers, nb_nodes, args.optimizer)
     print("\n** Model {} created sucessfully **\n".format(i+1))
-
+    print("** Model has {} parameters **".format(count_parameters(model)))
     ## Model Training
     print("** Starting training... **")
     model.train(train_input, train_classes, test_input, test_classes, test_target, \
                 epoch = args.epoch, eta = eta, criterion = loss)
+    
     print("** Training done. **\n")
 
     ## Results saving
