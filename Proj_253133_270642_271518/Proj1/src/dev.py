@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from utils import generate_pair_sets, plot_results, count_parameters
 from Net import Net
-
+import time
 import argparse
 
 parser = argparse.ArgumentParser(description='Project 1 - Classification.')
@@ -137,6 +137,7 @@ train_errors = []
 train_losses = []
 
 for i in range(rep):
+    start_rep_time = time.time()
     ## Model declaration
     model = Net(args.architecture, nb_classes, nb_residual_blocks, \
                 nb_channels, kernel_size, skip_connections, batch_normalization, \
@@ -155,6 +156,7 @@ for i in range(rep):
     test_errors.append(model.test_error)
     train_errors.append(model.train_error)
     train_losses.append(model.sumloss)
+    print("** Training time : {:.0f} minutes {:.0f} seconds".format((time.time()-start_rep_time)/60, (time.time()-start_rep_time)%60))
     print("**************************************************************")
 
 ## Ploting results

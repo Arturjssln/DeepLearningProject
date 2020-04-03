@@ -2,6 +2,7 @@ import math
 import torch
 from torch import nn
 from torch.nn import functional as F
+import time
 
 class Net(nn.Module):
     def __init__(self, architecture, *param):
@@ -193,7 +194,11 @@ class Net(nn.Module):
                 optimizer = torch.optim.Adam(self.parameters(), lr = eta)
             else:
                 raise NameError('Unknown optimizer')
+
+        train_time_avg_epoch = 0
+
         for e in range(epoch):
+            epoch_start_time = time.time()
             sum_loss = 0
             # We do this with mini-batches
             for b in range(0, train_input.size(0), batch_size):
@@ -219,12 +224,16 @@ class Net(nn.Module):
             self.test_error.append(self.compute_error_rate(test_input, test_target, batch_size))
             self.test_final_error.append(self.compute_error_rate(test_input, test_target_final, batch_size, pair = True))
 
+            train_time_avg_epoch = (train_time_avg_epoch * e-1) + (time.time() - epoch_start_time) / e
+            remaining_time  = (epoch - e) * train_time_avg_epoch
+
             if e%print_skip == 0:
                 print("Epoch #{:d} --> Total train loss : {:.03f} ".format(e,  self.sumloss[-1]))
                 print("------------> Train error rate : {:.02f}% ".format(self.train_error[-1]*100))
                 if test_input is not None and test_target is not None and test_target_final is not None:
                     print("------------> Test class error rate : {:.02f}% ".format(self.test_error[-1]*100))
                     print("------------> Test comparison error rate : {:.02f}% ".format(self.test_final_error[-1]*100))
+                print("Predicted remaining time : {:.0f} minutes {:.0f} seconds".format(remaining_time/60, remaining_time%60))
                 print("-------------------------------------------------")
 
             #Save best epoch
