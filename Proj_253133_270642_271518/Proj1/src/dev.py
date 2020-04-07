@@ -5,6 +5,7 @@ from Net import Net
 import time
 import argparse
 
+
 parser = argparse.ArgumentParser(description='Project 1 - Classification.')
 
 parser.add_argument('--datasize',
@@ -62,13 +63,13 @@ else:
 train_input, train_target, train_classes, \
 test_input, test_target, test_classes = generate_pair_sets(args.datasize, normalize = True)
 print("** Data imported sucessfully **\n")
-print(train_input.shape)
+#print(train_input.shape)
 train_input = train_input.reshape(-1, 1, train_input.shape[-2], train_input.shape[-1])
 test_input = test_input.reshape(-1, 1, test_input.shape[-2], test_input.shape[-1])
 train_classes = train_classes.reshape(-1)
 test_classes = test_classes.reshape(-1)
 
-print("** Model choosen: **")
+print("** Model chosen: **")
 
 ## Defining parameters
 nb_residual_blocks = None
@@ -78,7 +79,7 @@ nb_linear_layers = None
 nb_nodes = None
 
 # Number of repetition
-rep = 10
+rep = 1
 # Learning rate
 eta = 1e-1
 # Parameters for Neural Network
@@ -100,9 +101,14 @@ elif args.architecture == 'resnet':
     optimizer = 'SGD'
     print(  "*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
 
-elif args.architecture == 'lenet' or args.architecture == 'alexnet':
+elif args.architecture == 'lenet':
     args.optimizer = 'SGD'
     print("*  LeNet neural network.")
+
+elif args.architecture == 'alexnet':
+    args.optimizer = 'SGD'
+    print("*  AlexNet neural network.")
+
 
 elif args.architecture == 'xception':
     args.bn = True
@@ -148,7 +154,7 @@ for i in range(rep):
     print("** Starting training... **")
     model.train(train_input, train_classes, test_input, test_classes, test_target, \
                 epoch = args.epoch, eta = eta, criterion = loss)
-    
+
     print("** Training done. **\n")
 
     ## Results saving
