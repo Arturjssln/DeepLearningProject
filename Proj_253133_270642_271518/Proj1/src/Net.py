@@ -27,17 +27,14 @@ class Net(nn.Module):
         nb_classes, nb_residual_blocks, \
         nb_channels, kernel_size, \
         skip_connections, batch_normalization, \
-        nb_linear_layers, nb_nodes, optimizer = param
+        nb_linear_layers, nb_nodes, optimizer, \
+        self.dropout = param
 
         self.optimizer = optimizer
 
         # default architecture
         if architecture is None:
-            #TODO: Implement default structure
-            self.conv1 = nn.Conv2d(1, 8, kernel_size=3)
-            self.conv2 = nn.Conv2d(8, 16, kernel_size=3)
-            self.fc1 = nn.Linear(16, 200)
-            self.fc2 = nn.Linear(200, nb_classes)
+            raise NotImplementedError
 
         # Linear fully connected architecture
         elif architecture == 'linear':
@@ -47,7 +44,9 @@ class Net(nn.Module):
             for _ in range(nb_linear_layers - 1):
                 modules.append(nn.Linear(nb_nodes, nb_nodes))
                 modules.append(nn.ReLU())
-            modules.append(nn.Linear(nb_nodes, 10))
+                if(self.dropout):
+                    modules.append(nn.Dropout(0.25)) # RATE TO DEFINE
+            modules.append(nn.Linear(nb_nodes, nb_classes))
             self.layers = nn.Sequential(*modules)
 
         # ResNet architecture
@@ -63,34 +62,40 @@ class Net(nn.Module):
 
         # LeNet architecture
         elif architecture == 'lenet':
-            self.conv1 = nn.Conv2d(1, 6, (5,5), padding = 2)
-            self.conv2 = nn.Conv2d(6, 16, (5,5))
-            self.fc1 = nn.Linear(16, 120)
-            self.fc2 = nn.Linear(120, 84)
-            self.fc3 = nn.Linear(84, 10)
+            if kernel_size == 3:
+                self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=3, padding = 2), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=3), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=3), nn.ReLU())
+                self.fc = nn.Sequential(nn.Linear(120, 84), nn.ReLU(), nn.Linear(84, nb_classes))
+
+            elif kernel_size == 5:
+                #LeNetC1: nn.Sequential(nn.Conv2d(1, 6, kernel_size=5, padding = 2), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                #LeNetC2: nn.Sequential(nn.Conv2d(6, 16, kernel_size=5), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                #LeNetC3: nn.Sequential(nn.Conv2d(16, 120, kernel_size=5), nn.ReLU())
+                self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=5, padding = 2), nn.ReLU())
+                self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=5), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=5), nn.ReLU())
+                self.fc = nn.Sequential(nn.Linear(120, 84), nn.ReLU(), nn.Linear(84, nb_classes))
+            else:
+                raise NameError("Kernel size not valid (Can be 3 or 5)")
 
         # AlexNet architecture
         elif architecture == 'alexnet':
-            self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1) #AlexCONV1(3,96, k=11,s=4,p=0)
-            self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)#AlexPool1(k=3, s=2)
-
-            # self.conv2 = nn.Conv2d(96, 256, kernel_size=5,stride=1,padding=2)
-            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)#AlexCONV2(96, 256,k=5,s=1,p=2)
-            self.pool2 = nn.MaxPool2d(kernel_size=2,stride=2)#AlexPool2(k=3,s=2)
-
-
-            self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)#AlexCONV3(256,384,k=3,s=1,p=1)
-            # self.conv4 = nn.Conv2d(384, 384, kernel_size=3, stride=1, padding=1)
-            self.conv4 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)#AlexCONV4(384, 384, k=3,s=1,p=1)
-            self.conv5 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)#AlexCONV5(384, 256, k=3, s=1,p=1)
-            self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)#AlexPool3(k=3,s=2)
-
-            self.fc6 = nn.Linear(256*1*1, 1024)  #AlexFC6(256*6*6, 4096)
-            self.fc7 = nn.Linear(1024, 512) #AlexFC6(4096,4096)
-            self.fc8 = nn.Linear(512, 10)  #AlexFC6(4096,1000)
+            #AlexCONV3(256,384,k=3,s=1,p=1)
+            #AlexCONV4(384, 384, k=3,s=1,p=1)
+            #AlexCONV5(384, 256, k=3, s=1,p=1)
+            #AlexFC6(256*6*6, 4096)
+            #AlexFC6(4096,4096)
+            #AlexFC6(4096,1000)
+            self.c1 = nn.Sequential(nn.Conv2d(1, 32, kernel_size=3, padding=1), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+            self.c2 = nn.Sequential(nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1), nn.ReLU(), nn.MaxPool2d(kernel_size=2,stride=2))
+            self.c3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+            self.c4 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
+            self.c5 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+            self.fc = nn.Sequential(nn.Linear(256, 1024), nn.ReLU(), nn.Linear(1024, 512), nn.ReLU(), nn.Linear(512, nb_classes))
 
         elif architecture == 'xception':
-            self.conv1 = nn.Conv2d(1, 32, 3,2, 0, bias=False)
+            self.conv1 = nn.Conv2d(1, 32, 3, 2, 0, bias=False)
             self.bn1 = nn.BatchNorm2d(32)
             self.relu = nn.ReLU(inplace=True)
             self.conv2 = nn.Conv2d(32,64,3,bias=False)
@@ -131,11 +136,7 @@ class Net(nn.Module):
         '''
         # default architecture
         if self.architecture is None:
-            #TODO: Implement default forward path
-            x = F.relu(F.max_pool2d(self.conv1(x), kernel_size=3))
-            x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2))
-            x = F.relu(self.fc1(x.view(-1, 16)))
-            x = self.fc2(x)
+            raise NotImplementedError
 
         # Linear fully connected architecture
         elif self.architecture == 'linear':
@@ -143,37 +144,33 @@ class Net(nn.Module):
 
         # ResNet architecture
         elif self.architecture == 'resnet':
+            batch_size = x.size(0)
             if self.batch_normalization:
                 x = F.relu(self.bn(self.conv(x)))
             else:
                 x = F.relu(self.conv(x))
             x = self.resnet_blocks(x)
-            x = F.avg_pool2d(x, 14).view(x.size(0), -1)
+            x = F.avg_pool2d(x, 14).view(batch_size, -1)
             x = self.fc(x)
 
         # LeNet architecture
         elif self.architecture == 'lenet':
-            x = F.max_pool2d(F.relu(self.conv1(x)), (2,2))
-            x = F.max_pool2d(F.relu(self.conv2(x)), (2,2))
-            x = x.view(-1, 16)
-            x = F.relu(self.fc1(x))
-            x = F.relu(self.fc2(x))
-            x = self.fc3(x)
+            batch_size = x.size(0)
+            x = self.c1(x)
+            x = self.c2(x)
+            x = self.c3(x)
+            x = self.fc(x.view(batch_size, -1))
+
 
         # AlexNet architecture
         elif self.architecture == 'alexnet':
-            x = self.conv1(x)
-            x = F.relu(self.pool1(x))
-            x = self.conv2(x)
-            x = F.relu(self.pool2(x))
-            x = self.conv3(x)
-            x = self.conv4(x)
-            x = self.conv5(x)
-            x = F.relu(self.pool3(x))
-            x = x.view(-1, 256 * 1 * 1) #Alex: x = x.view(-1, 256*6*6)
-            x = F.relu(self.fc6(x))
-            x = F.relu(self.fc7(x))
-            x = self.fc8(x)
+            batch_size = x.size(0)
+            x = self.c1(x)
+            x = self.c2(x)
+            x = self.c3(x)
+            x = self.c4(x)
+            x = self.c5(x)
+            x = self.fc(x.view(batch_size, -1))
 
         elif self.architecture == 'xception':
             x = self.conv1(x)
@@ -265,12 +262,12 @@ class Net(nn.Module):
             remaining_time  = (epoch - e) * train_time_avg_epoch
 
             if e%print_skip == 0:
-                print("Epoch #{:d} --> Total train loss : {:.03f} ".format(e,  self.sumloss[-1]))
+                print("Epoch #{:2d} --> Total train loss : {:.03f} ".format(e,  self.sumloss[-1]))
                 print("------------> Train error rate : {:.02f}% ".format(self.train_error[-1]*100))
                 if test_input is not None and test_target is not None and test_target_final is not None:
                     print("------------> Test class error rate : {:.02f}% ".format(self.test_error[-1]*100))
                     print("------------> Test comparison error rate : {:.02f}% ".format(self.test_final_error[-1]*100))
-                print("Predicted remaining time : {:.0f} minutes {:.0f} seconds".format(remaining_time/60, remaining_time%60))
+                print("Predicted remaining time : {:.0f} minute(s) {:.0f} second(s)".format(remaining_time//60, int(remaining_time)%60))
                 print("-------------------------------------------------")
 
             #Save best epoch

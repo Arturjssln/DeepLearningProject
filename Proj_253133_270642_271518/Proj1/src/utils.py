@@ -87,6 +87,19 @@ def generate_pair_sets(nb, normalize = False):
 
 ######################################################################
 
+def generate_data(datasize, normalize):
+    train_input, train_target, train_classes, \
+    test_input, test_target, test_classes = generate_pair_sets(datasize, normalize)
+
+    train_input = train_input.reshape(-1, 1, train_input.shape[-2], train_input.shape[-1])
+    test_input = test_input.reshape(-1, 1, test_input.shape[-2], test_input.shape[-1])
+    train_classes = train_classes.reshape(-1)
+    test_classes = test_classes.reshape(-1)
+    print("\n** Data generated **")
+    return (train_input, train_target, train_classes, test_input, test_target, test_classes)
+
+######################################################################
+
 def plot_results(train_losses, train_errors, test_errors, goal_errors):
     import matplotlib.pyplot as plt
 
@@ -114,8 +127,10 @@ def plot_results(train_losses, train_errors, test_errors, goal_errors):
     plt.legend(['Train', 'Test (predict digit)', 'Test (predict comparison)'])
     plt.xlabel('Epoch')
     plt.ylabel('Error rate (in %)')
-    plt.show()
+    plt.show(block = False)
+    
 
+######################################################################
 
 def count_parameters(model):
     pp=0

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from utils import generate_pair_sets, plot_results, count_parameters
+from utils import generate_data, plot_results, count_parameters
 from Net import Net
 import time
 import argparse
@@ -44,6 +44,11 @@ parser.add_argument('--optimizer',
                     type = str, default = None,
                     help = 'Define optimizer to use (can be MSE, Adam; default: None)')
 
+parser.add_argument('--dropout',
+                    action='store_true', default=False,
+                    help = 'Use dropout (default: False)')
+
+
 args = parser.parse_args()
 
 
@@ -59,16 +64,6 @@ else:
     raise ValueError
 
 
-## Data generation
-train_input, train_target, train_classes, \
-test_input, test_target, test_classes = generate_pair_sets(args.datasize, normalize = True)
-print("** Data imported sucessfully **\n")
-#print(train_input.shape)
-train_input = train_input.reshape(-1, 1, train_input.shape[-2], train_input.shape[-1])
-test_input = test_input.reshape(-1, 1, test_input.shape[-2], test_input.shape[-1])
-train_classes = train_classes.reshape(-1)
-test_classes = test_classes.reshape(-1)
-
 print("** Model chosen: **")
 
 ## Defining parameters
@@ -79,7 +74,7 @@ nb_linear_layers = None
 nb_nodes = None
 
 # Number of repetition
-rep = 1
+rep = 3
 # Learning rate
 eta = 1e-1
 # Parameters for Neural Network
@@ -102,6 +97,7 @@ elif args.architecture == 'resnet':
     print(  "*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
 
 elif args.architecture == 'lenet':
+    kernel_size = 5 # CAN BE 3 OR 5
     args.optimizer = 'SGD'
     print("*  LeNet neural network.")
 
@@ -121,11 +117,14 @@ else:
 
 skip_connections = args.residual
 if skip_connections:
-    print("*  Skipping connections features activated!")
+    print("*  Skipping connections feature activated!")
 
-batch_normalization = args.bn
-if skip_connections:
-    print("*  Batch Normalization features activated!")
+if args.bn:
+    print("*  Batch Normalization feature activated!")
+
+if args.dropout:
+    print("*  Dropout feature activated!")
+
 
 if args.optimizer is None:
     print("*  No optimizer choosen --> using batch stochastic gradient descend.")
@@ -144,25 +143,32 @@ train_losses = []
 
 for i in range(rep):
     start_rep_time = time.time()
+
     ## Model declaration
     model = Net(args.architecture, nb_classes, nb_residual_blocks, \
-                nb_channels, kernel_size, skip_connections, batch_normalization, \
-                nb_linear_layers, nb_nodes, args.optimizer)
-    print("\n** Model {} created sucessfully **\n".format(i+1))
-    print("** Model has {} parameters **".format(count_parameters(model)))
+                nb_channels, kernel_size, skip_connections, args.bn, \
+                nb_linear_layers, nb_nodes, args.optimizer, args.dropout)
+    print("** Model {} created sucessfully **".format(i+1))
+    print("** Model has {} parameters **\n".format(count_parameters(model)))
+
+    ## Data generation
+    train_input, train_target, train_classes, \
+    test_input, test_target, test_classes = generate_data(args.datasize, normalize = True)
+
+
     ## Model Training
     print("** Starting training... **")
     model.train(train_input, train_classes, test_input, test_classes, test_target, \
                 epoch = args.epoch, eta = eta, criterion = loss)
-
-    print("** Training done. **\n")
+    print("** Training done. **")
 
     ## Results saving
     goal_errors.append(model.test_final_error)
     test_errors.append(model.test_error)
     train_errors.append(model.train_error)
     train_losses.append(model.sumloss)
-    print("** Training time : {:.0f} minutes {:.0f} seconds".format((time.time()-start_rep_time)/60, (time.time()-start_rep_time)%60))
+
+    print("** Training time : {:.0f} minutes {:.0f} seconds\n".format((time.time()-start_rep_time)//60, int(time.time()-start_rep_time)%60))
     print("**************************************************************")
 
 ## Ploting results
