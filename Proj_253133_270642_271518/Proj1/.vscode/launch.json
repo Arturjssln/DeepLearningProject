@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/dev.py",
             "console": "integratedTerminal",
-            "args": ["--architecture", "resnet"]
+            "args": ["--architecture", "resnet", "--save-fig"]
         },
         {
             "name": "Python: DL - resnet + BN",
@@ -20,7 +20,8 @@
             "console": "integratedTerminal",
             "args": [
                         "--architecture", "resnet",
-                        "--bn"
+                        "--bn",
+                        "--save-fig"
                     ]
         },
         {
@@ -31,7 +32,8 @@
             "console": "integratedTerminal",
             "args": [
                         "--architecture", "resnet",
-                        "--residual"
+                        "--residual",
+                        "--save-fig"
                     ]
         },
         {
@@ -44,6 +46,18 @@
                         "--architecture", "resnet",
                         "--bn",
                         "--residual",
+                        "--save-fig"
+                    ]
+        }
+
+        {
+            "name": "Python resnet comparaison",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/RESNET_TRAIN.py",
+            "console": "integratedTerminal",
+            "args": [
+                        
                     ]
         }
     ]
