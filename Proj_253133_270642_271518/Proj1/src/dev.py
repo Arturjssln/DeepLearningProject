@@ -43,8 +43,6 @@ parser.add_argument('--optimizer',
                     type = str, default = None,
                     help = 'Define optimizer to use (can be MSE, Adam; default: None)')
 
-<<<<<<< Updated upstream
-=======
 parser.add_argument('--dropout',
                     action='store_true', default=False,
                     help = 'Use dropout (default: False)')
@@ -70,7 +68,6 @@ parser.add_argument('--force_axis',
                     help = 'Used for plotting, if selected, axis is not automatically scalled (default is false)')
 
 
->>>>>>> Stashed changes
 args = parser.parse_args()
 
 
@@ -106,11 +103,7 @@ nb_linear_layers = None
 nb_nodes = None
 
 # Number of repetition
-<<<<<<< Updated upstream
-rep = 10
-=======
 rep = 5
->>>>>>> Stashed changes
 # Learning rate
 eta = 1e-1
 # Parameters for Neural Network
