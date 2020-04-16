@@ -1,9 +1,0 @@
-Architecture Ideas 
-
-CNN 
-- LeNet/AlexNet : le plus basique donc peut etre pas mal as a start to base the rest.
-AlexNet il a du ReLu peut etre meilleur base mais pas auxiliary network
-- InceptionV1 (GoogLeNet): il a deux auxiliary networks ! use batch normlization 
-- Inceptionv3: more computationally efficient
--InceptionResNetv2: apparently efficient but 215MB
--Xception: the smallest size but second most efficient  
