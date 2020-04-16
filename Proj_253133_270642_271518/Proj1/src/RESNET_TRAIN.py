@@ -9,7 +9,7 @@ NB_CHANNELS_RANGE = [1, 2, 4, 8, 16]
 KERNEL_SIZE_RANGE = [3, 5, 7]
 
 RESIDUAL = True
-BN = False
+BN = True
 
 FNULL = open(os.devnull, 'w')
 
