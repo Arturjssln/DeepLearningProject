@@ -60,24 +60,32 @@ class Net(nn.Module):
             )
             self.fc = nn.Linear(nb_channels, nb_classes)
 
+
         # LeNet architecture
         elif architecture == 'lenet':
-            if kernel_size == 3:
-                self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=3, padding = 2), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
-                self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=3), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
-                self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=3), nn.ReLU())
-                self.fc = nn.Sequential(nn.Linear(120, 84), nn.ReLU(), nn.Linear(84, nb_classes))
+            self.batch_normalization = batch_normalization
 
-            elif kernel_size == 5:
-                #LeNetC1: nn.Sequential(nn.Conv2d(1, 6, kernel_size=5, padding = 2), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
-                #LeNetC2: nn.Sequential(nn.Conv2d(6, 16, kernel_size=5), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
-                #LeNetC3: nn.Sequential(nn.Conv2d(16, 120, kernel_size=5), nn.ReLU())
-                self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=5, padding = 2), nn.ReLU())
-                self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=5), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
-                self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=5), nn.ReLU())
+            if batch_normalization:
+                if kernel_size == 3:
+                    self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=kernel_size, padding = 2), nn.BatchNorm2d(6), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                elif kernel_size == 5:
+                    self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=kernel_size, padding = 2), nn.BatchNorm2d(6), nn.ReLU())
+                else:
+                    raise NameError("Kernel size not valid (Can be 3 or 5)")
+                self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=kernel_size), nn.BatchNorm2d(16), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=kernel_size), nn.BatchNorm2d(120), nn.ReLU())
                 self.fc = nn.Sequential(nn.Linear(120, 84), nn.ReLU(), nn.Linear(84, nb_classes))
             else:
-                raise NameError("Kernel size not valid (Can be 3 or 5)")
+                if kernel_size == 3:
+                    self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=kernel_size, padding = 2), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                elif kernel_size == 5:
+                    self.c1 = nn.Sequential(nn.Conv2d(1, 6, kernel_size=kernel_size, padding = 2), nn.ReLU())
+                else:
+                    raise NameError("Kernel size not valid (Can be 3 or 5)")
+                self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=kernel_size), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=kernel_size), nn.ReLU())
+                self.fc = nn.Sequential(nn.Linear(120, 84), nn.ReLU(), nn.Linear(84, nb_classes))
+
 
         # AlexNet architecture
         elif architecture == 'alexnet':
