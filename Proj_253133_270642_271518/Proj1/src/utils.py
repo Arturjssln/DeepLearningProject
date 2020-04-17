@@ -100,7 +100,9 @@ def generate_data(datasize, normalize):
 
 ######################################################################
 
-def plot_results(train_losses, train_errors, test_errors, goal_errors):
+
+def plot_results(train_losses, train_errors, test_errors, goal_errors, force_error_axis = False, save=False, save_title=None):
+
     import matplotlib.pyplot as plt
 
     epoch = len(train_losses[0])
@@ -127,7 +129,14 @@ def plot_results(train_losses, train_errors, test_errors, goal_errors):
     plt.legend(['Train', 'Test (predict digit)', 'Test (predict comparison)'])
     plt.xlabel('Epoch')
     plt.ylabel('Error rate (in %)')
-    plt.show(block = False)
+
+    if force_error_axis:
+        plt.ylim(0, 100)
+    if save is True:
+        plt.savefig('{}.png'.format(save_title))
+    else:
+        plt.show(block = False)
+
     
 
 ######################################################################

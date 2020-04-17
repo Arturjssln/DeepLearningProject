@@ -48,6 +48,26 @@ parser.add_argument('--dropout',
                     action='store_true', default=False,
                     help = 'Use dropout (default: False)')
 
+parser.add_argument('--save_fig',
+                    action='store_true', default=False,
+                    help = 'Save figure to png')
+
+parser.add_argument('--nb_residual_blocks',
+                    type = int, default = 1, #To Define
+                    help = 'If Resnet selected - change number of residual blocks (default is 1)')
+
+parser.add_argument('--nb_channels',
+                    type = int, default = 6, #To Define
+                    help = 'If Resnet selected - change number of channels (default is 6)')
+
+parser.add_argument('--kernel_size',
+                    type = int, default = 3, #To Define
+                    help = 'If Resnet selected - change kernel size (default is 3)')
+
+parser.add_argument('--force_axis',
+                    action='store_true', default=False,
+                    help = 'Used for plotting, if selected, axis is not automatically scalled (default is false)')
+
 
 args = parser.parse_args()
 
@@ -74,7 +94,9 @@ nb_linear_layers = None
 nb_nodes = None
 
 # Number of repetition
-rep = 3
+
+rep = 5
+
 # Learning rate
 eta = 1e-1
 # Parameters for Neural Network
@@ -90,9 +112,15 @@ if args.architecture == 'linear':
     print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 
 elif args.architecture == 'resnet':
-    nb_residual_blocks = 1 # TO DEFINE
-    nb_channels = 6 # TO DEFINE
-    kernel_size = 3 # TO DEFINE but minimum 3 (included)
+    nb_residual_blocks = args.nb_residual_blocks
+    nb_channels = args.nb_channels
+    kernel_size = args.kernel_size
+
+    ## Kernel size must be greater than 2
+    if kernel_size < 3:
+        print("*  WARNING KERNEL SIZE MUST BE GREATER THAN 2, CHANGED KERNEL SIZE TO 3")
+        kernel_size = 3
+
     optimizer = 'SGD'
     print(  "*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
 
@@ -172,4 +200,4 @@ for i in range(rep):
     print("**************************************************************")
 
 ## Ploting results
-plot_results(train_losses, train_errors, test_errors, goal_errors)
+plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Resnet-{} residual-{} channels-{} kernelsize.png".format(nb_residual_blocks, nb_channels, kernel_size))
