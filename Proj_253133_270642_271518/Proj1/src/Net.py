@@ -45,7 +45,7 @@ class Net(nn.Module):
                 modules.append(nn.Linear(nb_nodes, nb_nodes))
                 modules.append(nn.ReLU())
                 if(self.dropout):
-                    modules.append(nn.Dropout(0.25)) # RATE TO DEFINE
+                    modules.append(nn.Dropout()) # RATE TO DEFINE
             modules.append(nn.Linear(nb_nodes, nb_classes))
             self.layers = nn.Sequential(*modules)
 
@@ -64,6 +64,7 @@ class Net(nn.Module):
         # LeNet architecture
         elif architecture == 'lenet':
             self.batch_normalization = batch_normalization
+            self.do = nn.Dropout() # RATE TO DEFINE (default=0.5)
 
             if batch_normalization:
                 if kernel_size == 3:
@@ -164,10 +165,16 @@ class Net(nn.Module):
         # LeNet architecture
         elif self.architecture == 'lenet':
             batch_size = x.size(0)
-            x = self.c1(x)
-            x = self.c2(x)
-            x = self.c3(x)
-            x = self.fc(x.view(batch_size, -1))
+            if self.dropout:
+                x = self.do(self.c1(x))
+                x = self.do(self.c2(x))
+                x = self.do(self.c3(x))
+                x = self.do(self.fc(x.view(batch_size, -1)))
+            else:
+                x = self.c1(x)
+                x = self.c2(x)
+                x = self.c3(x)
+                x = self.fc(x.view(batch_size, -1))
 
 
         # AlexNet architecture
