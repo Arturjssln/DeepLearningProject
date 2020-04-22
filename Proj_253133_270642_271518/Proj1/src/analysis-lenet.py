@@ -1,8 +1,7 @@
 import subprocess
 import os
+import sys
 
-
-PYTHON_INTER = 'python' #change accordingly to your environment
 
 KERNEL_SIZE_RANGE = [3, 5]
 BN = [True, False]
@@ -23,5 +22,5 @@ for i in KERNEL_SIZE_RANGE:
             if k: #dropout
                 params += ' --dropout'
             print(params)
-            subprocess.call('{0} dev.py {1}'.format(PYTHON_INTER, params), shell=True, stdout=FNULL)
+            subprocess.call('{0} dev.py {1}'.format(sys.executable, params), shell=True, stdout=FNULL)
             print('** Evaluation #{} Done ({:.1f}% overall)'.format(eval_, eval_*100/nb_eval))
