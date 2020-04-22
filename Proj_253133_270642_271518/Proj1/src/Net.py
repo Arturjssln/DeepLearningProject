@@ -228,7 +228,7 @@ class Net(nn.Module):
             num_features *= s
         return num_features
 
-    def train(  self, \
+    def train_( self, \
                 train_input, train_target, \
                 test_input = None, test_target = None, test_target_final = None, \
                 batch_size = 10, epoch = 50, \
@@ -296,6 +296,7 @@ class Net(nn.Module):
         '''
         Computing error rate givin an input and its target
         '''
+        self.eval()
         error = 0.0
         for b in range(0, target.size(0), batch_size):
             if pair:
@@ -313,6 +314,7 @@ class Net(nn.Module):
                 if pred.item() != t.item():
                     error += 1
         error /= target.size(0)
+        self.train()
         return error
 
 

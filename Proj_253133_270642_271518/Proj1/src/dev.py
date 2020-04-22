@@ -186,8 +186,8 @@ for i in range(rep):
 
     ## Model Training
     print("** Starting training... **")
-    model.train(train_input, train_classes, test_input, test_classes, test_target, \
-                epoch = args.epoch, eta = eta, criterion = loss)
+    model.train_(   train_input, train_classes, test_input, test_classes, test_target, \
+                    epoch = args.epoch, eta = eta, criterion = loss)
     print("** Training done. **")
 
     ## Results saving
