@@ -1,6 +1,8 @@
-import torch.empty
+from torch import empty
+import math
 
 class Module(object):
+    autograd = True
     def __init__(self):
         raise NotImplementedError
 
@@ -19,21 +21,43 @@ class Module(object):
     def criterion(self):
         raise NotImplementedError
 
-    def zero_grad(self):
-        raise NotImplementedError
+class zero_grad(Module):
+    raise NotImplementedError
 
-    def no_grad(self):
-        raise NotImplementedError
+class no_grad(Module):
+    def __enter__(self):
+        Module.autograd = False
+
+    def __exit__(self, type, value, traceback):
+        Module.autograd = True
 
 
 class Linear(Module):
     raise NotImplementedError
 
 class ReLU(Module):
-    raise NotImplementedError
+    def __call__(self, *input):
+        return self.forward(input)
+
+    def forward(self, *input):
+        raise NotImplementedError
+        if Module.autograd:
+            return input if input > 0 else 0
+        else:
+            return input if input > 0 else 0
 
 class Tanh(Module):
-    raise NotImplementedError
+    def __call__(self, *input):
+        return self.forward(input)
+
+    def forward(self, *input):
+        raise NotImplementedError
+        if Module.autograd:
+            #Add gradient graph
+            return math.tanh(input)
+        else:
+            #Add gradient graph
+            return math.tanh(input)
 
 class Sequential(Module):
     raise NotImplementedError

@@ -104,10 +104,9 @@ nb_classes = 10
 if args.architecture == 'linear':
     nb_nodes = args.nodes
     if args.deep:
-        nb_linear_layers = 3 # TO DEFINE
-
+        nb_linear_layers = 3
     else:
-        nb_linear_layers = 1 # TO DEFINE
+        nb_linear_layers = 2
 
     print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 
@@ -200,4 +199,11 @@ for i in range(rep):
     print("**************************************************************")
 
 ## Ploting results
-plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Resnet-{} residual-{} channels-{} kernelsize.png".format(nb_residual_blocks, nb_channels, kernel_size))
+#DEFAULT
+#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis)
+#RESNET
+#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Resnet-{} residual-{} channels-{} kernelsize".format(nb_residual_blocks, nb_channels, kernel_size))
+#LENET
+#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Lenet-BatchNorm {}-Dropout {}-Kernelsize {}".format(args.bn, args.dropout, kernel_size))
+#LINEAR
+plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Linear-{} linear_layers-{} nodes-Dropout {}".format(nb_linear_layers, nb_nodes, args.dropout))

@@ -1,4 +1,4 @@
-import torch.empty
+from torch import empty
 import framework as ff
 
 class Net(ff.Module):
