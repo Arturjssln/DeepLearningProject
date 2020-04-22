@@ -2,7 +2,7 @@ import subprocess
 import os
 
 
-PYTHON_INTER = 'python-3-7' #change accordingly to your environment
+PYTHON_INTER = 'python' #change accordingly to your environment
 
 #NB_RESIDUAL_BLOCKS_RANGE = [1, 2, 3, 4, 5]
 #NB_CHANNELS_RANGE = [1, 2, 4, 8, 16]
