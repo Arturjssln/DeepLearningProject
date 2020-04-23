@@ -1,5 +1,6 @@
-from torch import empty
+import torch
 
+torch.set_grad_enabled(False)
 
 class Module(object):
     autograd = True
@@ -24,7 +25,9 @@ class Cercle(Module):
     def __init__(self):
         super(Cercle, self).__init__
 
-print(torch.tanh(5))
+t = torch.ones([1, 2], requires_grad=True)
+t = t + t
+print(t.grad_fn)
 
 c = Cercle()
 c.print_grad()
