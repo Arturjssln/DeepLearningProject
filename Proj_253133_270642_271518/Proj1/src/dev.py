@@ -68,6 +68,10 @@ parser.add_argument('--force_axis',
                     action='store_true', default=False,
                     help = 'Used for plotting, if selected, axis is not automatically scalled (default is false)')
 
+parser.add_argument('--auxloss',
+                    action='store_true', default=False,
+                    help = 'Use auxiliary loss (default is false)')
+
 
 args = parser.parse_args()
 
@@ -95,7 +99,7 @@ nb_nodes = None
 
 # Number of repetition
 
-rep = 5
+rep = 20
 
 # Learning rate
 eta = 1e-1
@@ -103,6 +107,7 @@ eta = 1e-1
 nb_classes = 10
 if args.architecture == 'linear':
     nb_nodes = args.nodes
+    args.auxloss = False
     if args.deep:
         nb_linear_layers = 5
     else:
@@ -114,6 +119,7 @@ elif args.architecture == 'resnet':
     nb_residual_blocks = args.nb_residual_blocks
     nb_channels = args.nb_channels
     kernel_size = args.kernel_size
+    args.auxloss = False
 
     ## Kernel size must be greater than 2
     if kernel_size < 3:
@@ -124,11 +130,12 @@ elif args.architecture == 'resnet':
     print(  "*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
 
 elif args.architecture == 'lenet':
-    kernel_size = 5 # CAN BE 3 OR 5
+    kernel_size = args.kernel_size # CAN BE 3 OR 5
     args.optimizer = 'SGD'
     print("*  LeNet neural network.")
 
 elif args.architecture == 'alexnet':
+    args.auxloss = False
     args.optimizer = 'SGD'
     print("*  AlexNet neural network.")
 
@@ -152,6 +159,9 @@ if args.bn:
 if args.dropout:
     print("*  Dropout feature activated!")
 
+if args.auxloss:
+    print("*  Auxiliary loss feature activated!")
+
 
 if args.optimizer is None:
     print("*  No optimizer choosen --> using batch stochastic gradient descend.")
@@ -174,7 +184,7 @@ for i in range(rep):
     ## Model declaration
     model = Net(args.architecture, nb_classes, nb_residual_blocks, \
                 nb_channels, kernel_size, skip_connections, args.bn, \
-                nb_linear_layers, nb_nodes, args.optimizer, args.dropout)
+                nb_linear_layers, nb_nodes, args.optimizer, args.dropout, args.auxloss)
     print("** Model {} created sucessfully **".format(i+1))
     print("** Model has {} parameters **\n".format(count_parameters(model)))
 
@@ -185,17 +195,20 @@ for i in range(rep):
 
     ## Model Training
     print("** Starting training... **")
-    model.train_(   train_input, train_classes, test_input, test_classes, test_target, \
+    success = model.train_(   train_input, train_classes, test_input, test_classes, test_target, \
                     epoch = args.epoch, eta = eta, criterion = loss)
     print("** Training done. **")
 
     ## Results saving
-    goal_errors.append(model.test_final_error)
-    test_errors.append(model.test_error)
-    train_errors.append(model.train_error)
-    train_losses.append(model.sumloss)
+    if success:
+        goal_errors.append(model.test_final_error)
+        test_errors.append(model.test_error)
+        train_errors.append(model.train_error)
+        train_losses.append(model.sumloss)
 
-    print("** Training time : {:.0f} minutes {:.0f} seconds\n".format((time.time()-start_rep_time)//60, int(time.time()-start_rep_time)%60))
+        print("** Training time : {:.0f} minutes {:.0f} seconds\n".format((time.time()-start_rep_time)//60, int(time.time()-start_rep_time)%60))
+    else:
+        print('** Training failed. **')
     print("**************************************************************")
 
 ## Ploting results
@@ -204,6 +217,6 @@ plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_ax
 #RESNET
 #plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Resnet-{} channels-{} residual-{} kernelsize".format(nb_channels, nb_residual_blocks, kernel_size))
 #LENET
-#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Lenet-Kernelsize {}-BatchNorm {}-Dropout {}".format(args.bn, args.dropout, kernel_size))
+#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Lenet-Kernelsize {}-BatchNorm {}-Dropout {}-Aux loss {}".format(kernel_size, args.bn, args.dropout, args.auxloss))
 #LINEAR
 #plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Linear-{} linear_layers-{} nodes-Dropout {}".format(nb_linear_layers, nb_nodes, args.dropout))

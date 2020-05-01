@@ -28,7 +28,7 @@ class Net(nn.Module):
         nb_channels, kernel_size, \
         skip_connections, batch_normalization, \
         nb_linear_layers, nb_nodes, optimizer, \
-        self.dropout = param
+        self.dropout, self.auxloss = param
 
         self.optimizer = optimizer
 
@@ -74,6 +74,8 @@ class Net(nn.Module):
                 else:
                     raise NameError("Kernel size not valid (Can be 3 or 5)")
                 self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=kernel_size), nn.BatchNorm2d(16), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                if self.auxloss:
+                    self.fc_auxloss = nn.Linear(16*kernel_size*kernel_size, nb_classes)
                 self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=kernel_size), nn.BatchNorm2d(120), nn.ReLU())
                 self.fc = nn.Sequential(nn.Linear(120, 84), nn.ReLU(), nn.Linear(84, nb_classes))
             else:
@@ -84,6 +86,8 @@ class Net(nn.Module):
                 else:
                     raise NameError("Kernel size not valid (Can be 3 or 5)")
                 self.c2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=kernel_size), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
+                if self.auxloss:
+                    self.fc_auxloss = nn.Linear(16*kernel_size*kernel_size, nb_classes)
                 self.c3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=kernel_size), nn.ReLU())
                 self.fc = nn.Sequential(nn.Linear(120, 84), nn.ReLU(), nn.Linear(84, nb_classes))
 
@@ -99,6 +103,9 @@ class Net(nn.Module):
             self.c1 = nn.Sequential(nn.Conv2d(1, 32, kernel_size=3, padding=1), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
             self.c2 = nn.Sequential(nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1), nn.ReLU(), nn.MaxPool2d(kernel_size=2,stride=2))
             self.c3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+            if self.auxloss:
+                self.bn_auxloss = nn.BatchNorm2d(128)
+                self.fc_auxloss = nn.Linear(128*3*3, nb_classes)
             self.c4 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
             self.c5 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2))
             self.fc = nn.Sequential(nn.Linear(256, 1024), nn.ReLU(), nn.Linear(1024, 512), nn.ReLU(), nn.Linear(512, nb_classes))
@@ -168,11 +175,15 @@ class Net(nn.Module):
             if self.dropout:
                 x = self.do(self.c1(x))
                 x = self.do(self.c2(x))
+                if self.auxloss:
+                    aux = self.do(self.fc_auxloss(x.view(batch_size, -1)))
                 x = self.do(self.c3(x))
                 x = self.do(self.fc(x.view(batch_size, -1)))
             else:
                 x = self.c1(x)
                 x = self.c2(x)
+                if self.auxloss:
+                    aux = self.fc_auxloss(x.view(batch_size, -1))
                 x = self.c3(x)
                 x = self.fc(x.view(batch_size, -1))
 
@@ -219,6 +230,8 @@ class Net(nn.Module):
         else:
             raise NameError('Unknown architecture')
 
+        if self.auxloss:
+            return x, aux
         return x
 
     def num_flat_features(self, x):
@@ -251,14 +264,24 @@ class Net(nn.Module):
             sum_loss = 0
             # We do this with mini-batches
             for b in range(0, train_input.size(0), batch_size):
-                output = self(train_input.narrow(0, b, batch_size))
 
-                loss = criterion(output, train_target.narrow(0, b, batch_size))
-                sum_loss = sum_loss + loss.item()
+                if self.auxloss:
+                    output, aux_output = self(train_input.narrow(0, b, batch_size))
+                    loss = criterion(output, train_target.narrow(0, b, batch_size))
+                    loss2 = criterion(aux_output, train_target.narrow(0, b, batch_size))
+                    sum_loss = sum_loss + 0.7 * loss.item() + 0.3 * loss2.item()
+                else:
+                    output = self(train_input.narrow(0, b, batch_size))
+                    loss = criterion(output, train_target.narrow(0, b, batch_size))
+                    sum_loss = sum_loss + loss.item()
+
+
                 if self.optimizer is None:
                     self.zero_grad()
                 else:
                     optimizer.zero_grad()
+                if self.auxloss:
+                    loss2.backward(retain_graph = True)
                 loss.backward()
                 if self.optimizer is None:
                     with torch.no_grad():
@@ -266,7 +289,8 @@ class Net(nn.Module):
                             p -= eta * p.grad
                 else:
                     optimizer.step()
-
+            if math.isnan(sum_loss):
+                return False
             self.sumloss.append(sum_loss)
 
             self.train_error.append(self.compute_error_rate(train_input, train_target, batch_size))
@@ -291,6 +315,7 @@ class Net(nn.Module):
 
         print("** BEST SCORE --> Epoch #{:d}: \n*  train_error: {:.02f}%, \n*  test_error: {:.02f}%, \n*  test_comparison_error: {:.02f}%"\
             .format(self.best_epoch, self.train_error[self.best_epoch]*100, self.test_error[self.best_epoch]*100, self.test_final_error[self.best_epoch]*100))
+        return True
 
     def compute_error_rate(self, input, target, batch_size, pair = False):
         '''
@@ -300,14 +325,19 @@ class Net(nn.Module):
         error = 0.0
         for b in range(0, target.size(0), batch_size):
             if pair:
-                #error = 0
-                prediction = self(input.narrow(0, 2*b, 2*batch_size))
+                if self.auxloss:
+                    prediction, _ = self(input.narrow(0, 2*b, 2*batch_size))
+                else:
+                    prediction = self(input.narrow(0, 2*b, 2*batch_size))
                 _, prediction = prediction.max(1)
                 prediction = prediction.reshape(-1, 2)
                 predicted_classes = (prediction[:, 1] - prediction[:, 0]) >= 0
                 predicted_classes = predicted_classes.int()
             else:
-                prediction = self(input.narrow(0, b, batch_size))
+                if self.auxloss:
+                    prediction, _ = self(input.narrow(0, b, batch_size))
+                else:
+                    prediction = self(input.narrow(0, b, batch_size))
                 _, predicted_classes = prediction.max(1)
             # Calculate test error
             for pred, t in zip(predicted_classes, target.narrow(0, b, batch_size)):
