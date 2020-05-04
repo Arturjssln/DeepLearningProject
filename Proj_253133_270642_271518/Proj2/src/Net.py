@@ -2,16 +2,16 @@ from torch import empty
 import framework as ff
 
 class Net(ff.Module):
-    def __init__(self, nb_nodes):
+    def __init__(self, nb_nodes, act_fct):
         super(Net, self).__init__()
         self.sumloss = []
         self.train_error = []
         self.test_error = []
 
-        self.linear_layers = ff.Sequential( ff.Linear(2, nb_nodes), ff.ReLU(), \
-                                            ff.Linear(nb_nodes, nb_nodes), ff.ReLU(), \
-                                            ff.Linear(nb_nodes, nb_nodes), ff.ReLU(), \
-                                            ff.Linear(nb_nodes, 2), ff.ReLU())
+        self.linear_layers = ff.Sequential( ff.Linear(2, nb_nodes), act_fct[0], \
+                                            ff.Linear(nb_nodes, nb_nodes), act_fct[1], \
+                                            ff.Linear(nb_nodes, nb_nodes), act_fct[2], \
+                                            ff.Linear(nb_nodes, 2))
     def forward(self, x):
         return self.linear_layers(x)
 

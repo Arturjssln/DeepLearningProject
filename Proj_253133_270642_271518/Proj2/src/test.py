@@ -10,7 +10,7 @@ dataset_size = 1000
 train_input, train_target, test_input, test_target = generate_data(dataset_size)
 
 ## Create Model
-model = Net(nb_nodes = 25)
+model = Net(nb_nodes = 25, act_fct=[ff.ReLU(),ff.ReLU(),ff.ReLU()])
 
 ## Training model
 model.train(train_input, train_target, test_input, test_target):
