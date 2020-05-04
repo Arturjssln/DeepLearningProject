@@ -1,4 +1,4 @@
-import torch.empty
+from torch import empty
 import math
 
 def generate_set(nb):

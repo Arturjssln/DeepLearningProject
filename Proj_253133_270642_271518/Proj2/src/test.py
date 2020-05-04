@@ -1,4 +1,4 @@
-import torch.empty
+import torch
 from utils import generate_data, plot_results
 from Net import Net
 

@@ -1,14 +1,9 @@
 import subprocess
 import os
+import sys
 
 
-PYTHON_INTER = 'python-3-7' #change accordingly to your environment
-
-#NB_RESIDUAL_BLOCKS_RANGE = [1, 2, 3, 4, 5]
-#NB_CHANNELS_RANGE = [1, 2, 4, 8, 16]
 KERNEL_SIZE_RANGE = [3, 5]
-
-#RESIDUAL = True
 BN = [True, False]
 DROPOUT = [True, False]
 
@@ -27,5 +22,5 @@ for i in KERNEL_SIZE_RANGE:
             if k: #dropout
                 params += ' --dropout'
             print(params)
-            subprocess.call('{0} dev.py {1}'.format(PYTHON_INTER, params), shell=True, stdout=FNULL)
+            subprocess.call('{0} dev.py {1}'.format(sys.executable, params), shell=True, stdout=FNULL)
             print('** Evaluation #{} Done ({:.1f}% overall)'.format(eval_, eval_*100/nb_eval))
