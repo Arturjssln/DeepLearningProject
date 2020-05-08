@@ -4,6 +4,7 @@ import framework as ff
 class Net(ff.Module):
     def __init__(self, nb_nodes, act_fct):
         super(Net, self).__init__()
+        self.best_epoch = 0
         self.sumloss = []
         self.train_error = []
         self.test_error = []
@@ -12,31 +13,47 @@ class Net(ff.Module):
                                             ff.Linear(nb_nodes, nb_nodes), act_fct[1], \
                                             ff.Linear(nb_nodes, nb_nodes), act_fct[2], \
                                             ff.Linear(nb_nodes, 2))
+    
+    def __call__(self, x):
+        return self.forward(x)
+    
     def forward(self, x):
         return self.linear_layers(x)
+
+    def parameters(self):
+        return self.linear_layers.parameters()
+
+    def backward(self, criterion):
+        d = criterion.backward()
+        for layer in reversed(self.linear_layers):
+            d = layer.backward(d)
+        return d
+
+
 
     def train(  self, \
                 train_input, train_target, \
                 test_input = None, test_target = None, \
                 batch_size = 10, epoch = 50, \
                 eta = 1e-1, criterion = ff.MSELoss(), print_skip = 5):
-        '''
+        """
         Training method
-        '''
+        """
 
         for e in range(epoch):
-            epoch_start_time = time.time()
             sum_loss = 0
             # We do this with mini-batches
             for b in range(0, train_input.size(0), batch_size):
+                # Forward + save local grad for each layer
                 output = self(train_input.narrow(0, b, batch_size))
-                loss = self.criterion(output, train_target.narrow(0, b, batch_size))
+                # Forward + save local grad of loss layer
+                loss = criterion(output, train_target.narrow(0, b, batch_size))
                 sum_loss = sum_loss + loss.item()
-                self.zero_grad()
-                loss.backward()
-                with ff.no_grad():
-                    for p in self.parameters():
-                        p -= eta * p.grad
+                #self.zero_grad() #TODO?
+                self.backward(criterion)  
+                #with ff.no_grad():
+                for p in self.parameters():
+                    p.p -= eta * p.grad
 
 
             self.sumloss.append(sum_loss)

@@ -2,7 +2,7 @@ from torch import empty
 import math
 
 def generate_set(nb):
-    input = Tensor(nb, 2).uniform_(0, 1)
+    input = empty(nb, 2).uniform_(0, 1)
     target = input.pow(2).sum(dim = 1).sub(1 / (2*math.pi)).sign().sub(-1).div(-2).long()
     return input, target
 

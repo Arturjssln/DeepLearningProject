@@ -4,22 +4,146 @@ import math
 class Module(object):
     autograd = True
     def __init__(self):
-        raise NotImplementedError
+        # initializing cache for intermediate results
+        # helps with gradient calculation in some cases
+        self.cache = {}
+        # cache for gradients
+        self.grad = {}
 
     def __call__(self, *input):
-        return self.forward(input)
+        # calculating output
+        output = self.forward(*input)
+        # calculating and caching local gradients
+        self.grad = self.local_grad(*input)
+        return output
+
 
     def forward(self, *input):
-        raise NotImplementedError
+        """
+        Forward pass of the function. Calculates the output value and the
+        gradient at the input as well.
+        """
+        pass
 
     def backward(self, *gradwrtoutput):
-        raise NotImplementedError
+        pass
 
-    def param(self):
-        return []
+    def local_grad(self, *input)
+
+    def parameters(self):
+        return {}
 
     def criterion(self):
         raise NotImplementedError
+
+
+class ReLU(Module):
+    def forward(self, *input):
+        return input if input > 0 else 0
+
+    def local_grad(self, *input):
+        return {'input': 1} if input > 0 else {'input': 0}
+
+    def backward(self, dy):
+        return dy * self.grad['input']
+
+
+class Tanh(Module):
+    def forward(self, *input):
+        raise NotImplementedError
+        return math.tanh(input)
+
+    def backward(self, dy):
+        return dy * self.grad['input']
+
+    def local_grad(self, *input):
+        s = 1 - math.tanh(input)**2
+        return {'input': s}
+
+
+class Layer(Module):
+    def __init__(self, *input):
+        super().__init__(*input)
+        self.params = {}
+        self.dparams = {}
+
+    def _init_params(self, *args):
+        """
+        Initializes the params.
+        """
+        pass
+
+    def parameters(self):
+        return self.params
+
+
+class Linear(Layer):
+    def __init__(self, in_dim, out_dim):
+        super().__init__()
+        self._init_params(in_dim, out_dim)
+
+    def _init_params(self, in_dim, out_dim, std = 1e-6):
+        #TODO: IMPROVE THAT
+        scale = 1 / sqrt(in_dim)
+        self.params['W'] = Parameter()
+        self.params['b'] = Parameter()
+        self.params['W'].p = scale * \
+            empty(in_dim, out_dim).normal_(mean=0, std=std)
+        self.params['b'].p = scale * \
+            empty(in_dim, out_dim).normal_(mean=0, std=std)
+
+    def forward(self, input):
+        output = torch.mm(input, self.params['W'].p) + self.params['b'].p
+        # caching variables for backprop
+        self.cache['input'] = input
+        self.cache['output'] = output
+
+        return output
+
+    def backward(self, dy):
+        # calculating the global gradient, to be propagated backwards
+        dx = torch.mm(dy, self.grad['input'].transpose())
+        # calculating the global gradient wrt to paramss
+        input = self.cache['input']
+        dw = torch.mm(self.grad['W'].p.transpose(), dy)
+        db = torch.sum(dy, dim=0, keepdim=True)
+        # caching the global gradients
+        self.grad['W'].grad = dw
+        self.grad['b'].grad = db
+        return dx
+
+
+class Loss(Module):
+    def forward(self, input, y):
+        pass
+
+    def backward(self):
+        return self.grad['input']
+
+    def local_grad(self, input, y):
+        pass
+
+
+class MSELoss(Loss):
+    def forward(self, input, y):
+         # calculating MSE loss
+        loss = ((input-y)**2).mean()
+
+        # caching for backprop
+        self.cache['y'] = y
+
+        return loss
+
+    def local_grad(self, input, y):
+        return {'input': 2*(input-y).mean()}
+
+class Parameter(object):
+    def __init__():
+        self.p = None
+        self.grad  = None
+
+    def para
+
 
 class zero_grad(Module):
     raise NotImplementedError
@@ -32,35 +156,5 @@ class no_grad(Module):
         Module.autograd = True
 
 
-class Linear(Module):
-    raise NotImplementedError
-
-class ReLU(Module):
-    def __call__(self, *input):
-        return self.forward(input)
-
-    def forward(self, *input):
-        raise NotImplementedError
-        if Module.autograd:
-            return input if input > 0 else 0
-        else:
-            return input if input > 0 else 0
-
-class Tanh(Module):
-    def __call__(self, *input):
-        return self.forward(input)
-
-    def forward(self, *input):
-        raise NotImplementedError
-        if Module.autograd:
-            #Add gradient graph
-            return math.tanh(input)
-        else:
-            #Add gradient graph
-            return math.tanh(input)
-
 class Sequential(Module):
-    raise NotImplementedError
-
-class LossMSE(Module):
     raise NotImplementedError
