@@ -9,7 +9,7 @@ class Net(ff.Module):
         self.train_error = []
         self.test_error = []
 
-        self.linear_layers = ff.Sequential( ff.Linear(2, nb_nodes), act_fct[0], \
+        self.linear_layers = ff.Sequential(ff.Linear(2, nb_nodes), act_fct[0], \
                                             ff.Linear(nb_nodes, nb_nodes), act_fct[1], \
                                             ff.Linear(nb_nodes, nb_nodes), act_fct[2], \
                                             ff.Linear(nb_nodes, 2))
@@ -52,7 +52,7 @@ class Net(ff.Module):
                 #self.zero_grad() #TODO?
                 self.backward(criterion)  
                 #with ff.no_grad():
-                for p in self.parameters():
+                for p in self.parameters(): #TODO: working in progress
                     p.p -= eta * p.grad
 
 

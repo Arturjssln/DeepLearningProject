@@ -28,7 +28,8 @@ class Module(object):
     def backward(self, *gradwrtoutput):
         pass
 
-    def local_grad(self, *input)
+    def local_grad(self, *input):
+        pass
 
     def parameters(self):
         return {}
@@ -50,7 +51,6 @@ class ReLU(Module):
 
 class Tanh(Module):
     def forward(self, *input):
-        raise NotImplementedError
         return math.tanh(input)
 
     def backward(self, dy):
@@ -84,7 +84,7 @@ class Linear(Layer):
 
     def _init_params(self, in_dim, out_dim, std = 1e-6):
         #TODO: IMPROVE THAT
-        scale = 1 / sqrt(in_dim)
+        scale = 1 / math.sqrt(in_dim)
         self.params['W'] = Parameter()
         self.params['b'] = Parameter()
         self.params['W'].p = scale * \
@@ -138,11 +138,10 @@ class MSELoss(Loss):
         return {'input': 2*(input-y).mean()}
 
 class Parameter(object):
-    def __init__():
+    def __init__(self):
         self.p = None
         self.grad  = None
-
-    def para
+    # TODO: finish this class ? 
 
 
 class zero_grad(Module):
@@ -156,5 +155,5 @@ class no_grad(Module):
         Module.autograd = True
 
 
-class Sequential(Module):
+class Sequential(Module): #TODO !!
     raise NotImplementedError
