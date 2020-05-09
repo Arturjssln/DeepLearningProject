@@ -65,7 +65,6 @@ class Layer(Module):
     def __init__(self, *input):
         super().__init__(*input)
         self.params = {}
-        self.dparams = {}
 
     def _init_params(self, *args):
         """
@@ -141,8 +140,7 @@ class Parameter(object):
     def __init__(self):
         self.p = None
         self.grad  = None
-    # TODO: finish this class ? 
-
+        
 
 class zero_grad(Module):
     raise NotImplementedError
@@ -155,5 +153,26 @@ class no_grad(Module):
         Module.autograd = True
 
 
-class Sequential(Module): #TODO !!
-    raise NotImplementedError
+class Sequential(Module):
+    def __init__(self, *layers):
+        self.layers = [layer for layer in layers]
+
+    def parameters(self):
+        params = []
+        for layer in self.layers:
+            param = layer.parameters()
+            for key in param:
+                params.append(param[key])
+        return params
+
+    def forward(self, input):
+        out = input
+        for layer in self.layers:
+            out = layer.forward(out)
+        return out
+
+    def backward(self, dy):
+        dout = dy
+        for layer in reversed(self.layers):
+            dout = layer.backward(dout)
+        return dout
