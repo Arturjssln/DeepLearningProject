@@ -2,7 +2,6 @@ from torch import empty
 import math
 
 class Module(object):
-    autograd = True
     def __init__(self):
         # initializing cache for intermediate results
         # helps with gradient calculation in some cases
@@ -34,8 +33,11 @@ class Module(object):
     def parameters(self):
         return {}
 
-    def criterion(self):
-        raise NotImplementedError
+    def __repr__(self):
+        pass
+    
+    def __str__(self):
+        return self.__repr__()
 
 
 class ReLU(Module):
@@ -48,6 +50,10 @@ class ReLU(Module):
     def backward(self, dy):
         return dy * self.grad['input']
 
+    def __repr__(self):
+        return "ReLU()"
+
+
 
 class Tanh(Module):
     def forward(self, *input):
@@ -59,6 +65,9 @@ class Tanh(Module):
     def local_grad(self, *input):
         s = 1 - math.tanh(input)**2
         return {'input': s}
+
+    def __repr__(self):
+        return "Tanh()"
 
 
 class Layer(Module):
@@ -73,23 +82,27 @@ class Layer(Module):
         pass
 
     def parameters(self):
+        params = []
+        for key, param in self.params.items():
+                params.append(param)
         return self.params
 
 
 class Linear(Layer):
     def __init__(self, in_dim, out_dim):
         super().__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
         self._init_params(in_dim, out_dim)
 
     def _init_params(self, in_dim, out_dim, std = 1e-6):
-        #TODO: IMPROVE THAT
         scale = 1 / math.sqrt(in_dim)
         self.params['W'] = Parameter()
         self.params['b'] = Parameter()
         self.params['W'].p = scale * \
             empty(in_dim, out_dim).normal_(mean=0, std=std)
         self.params['b'].p = scale * \
-            empty(in_dim, out_dim).normal_(mean=0, std=std)
+            empty(1, out_dim).normal_(mean=0, std=std)
 
     def forward(self, input):
         output = torch.mm(input, self.params['W'].p) + self.params['b'].p
@@ -111,6 +124,8 @@ class Linear(Layer):
         self.grad['b'].grad = db
         return dx
 
+    def __repr__(self):
+        return "Linear({}, {})".format(self.in_dim, self.out_dim)
 
 class Loss(Module):
     def forward(self, input, y):
@@ -136,22 +151,13 @@ class MSELoss(Loss):
     def local_grad(self, input, y):
         return {'input': 2*(input-y).mean()}
 
+    def __repr__(self):
+        return "MSELoss()"
+
 class Parameter(object):
     def __init__(self):
         self.p = None
         self.grad  = None
-        
-
-class zero_grad(Module):
-    raise NotImplementedError
-
-class no_grad(Module):
-    def __enter__(self):
-        Module.autograd = False
-
-    def __exit__(self, type, value, traceback):
-        Module.autograd = True
-
 
 class Sequential(Module):
     def __init__(self, *layers):
@@ -160,9 +166,7 @@ class Sequential(Module):
     def parameters(self):
         params = []
         for layer in self.layers:
-            param = layer.parameters()
-            for key in param:
-                params.append(param[key])
+            params += list(layer.parameters())
         return params
 
     def forward(self, input):
@@ -176,3 +180,10 @@ class Sequential(Module):
         for layer in reversed(self.layers):
             dout = layer.backward(dout)
         return dout
+
+    def __repr__(self):
+        out = "Sequential(\n"
+        for i, layer in enumerate(self.layers):
+            out += '({}) '.format(i) + layer.__repr__() + '\n'
+        out += ')'
+        return out
