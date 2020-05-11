@@ -1,21 +1,30 @@
 from torch import empty
 import math
+import torch 
 
-def generate_set(nb):
+def generate_set_crossEntropy(nb):
     input = empty(nb, 2).uniform_(0, 1)
     target = input.pow(2).sum(dim = 1).sub(1 / (2*math.pi)).sign().sub(-1).div(-2).long()
     return input, target
 
+def generate_set_MSEloss(nb):
+    input = empty(nb, 2).uniform_(0, 1)
+    label = -input.pow(2).sum(dim = 1).sub(1 / (2*math.pi)).sign().sub(-1).div(-2).long()
+    target = torch.zeros(nb, 2)
+    for i in label: 
+        target[i]=1
+    return input, target
+
 def generate_data(nb, normalize = False):
-    train = generate_set(nb)
-    test = generate_set(nb)
+    train, train_target = generate_set_MSEloss(nb)
+    test, test_target = generate_set_MSEloss(nb)
 
     if normalize:
         mu, std = train[0].mean(), train[0].std()
         train[0].sub_(mu).div_(std)
         test[0].sub_(mu).div_(std)
 
-    return train, test
+    return train, train_target, test, test_target
 
 
 def plot_results(train_losses, train_errors, test_errors):

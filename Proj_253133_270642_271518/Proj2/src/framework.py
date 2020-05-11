@@ -1,4 +1,6 @@
-from torch import empty
+#from torch import empty
+import torch 
+from torch import empty 
 import math
 
 class Module(object):
@@ -114,6 +116,7 @@ class Linear(Layer):
 
     def backward(self, dy):
         # calculating the global gradient, to be propagated backwards
+        print('dy: ', dy)
         dx = torch.mm(dy, self.grad['input'].transpose())
         # calculating the global gradient wrt to paramss
         input = self.cache['input']
@@ -139,9 +142,16 @@ class Loss(Module):
 
 
 class MSELoss(Loss):
+    def __call__(self, input, y):
+        # calculating output
+        output = self.forward(input,y)
+        # calculating and caching local gradients
+        self.grad = self.local_grad(input,y)
+        return output
+
     def forward(self, input, y):
-         # calculating MSE loss
-        loss = ((input-y)**2).mean()
+        # calculating MSE loss
+        loss =  ((input-y)**2).mean()
 
         # caching for backprop
         self.cache['y'] = y

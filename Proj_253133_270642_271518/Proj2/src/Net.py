@@ -13,19 +13,23 @@ class Net(ff.Module):
                                             ff.Linear(nb_nodes, nb_nodes), act_fct, \
                                             ff.Linear(nb_nodes, nb_nodes), act_fct, \
                                             ff.Linear(nb_nodes, 2))
-    
+        
+        self.linear=ff.Linear(2,2)
+
     def __call__(self, x):
         return self.forward(x)
     
     def forward(self, x):
-        return self.linear_layers(x)
+        #return self.linear_layers(x)
+        return self.linear(x)
 
     def parameters(self):
         return self.linear_layers.parameters()
 
     def backward(self, criterion):
         d = criterion.backward()
-        d = self.linear_layers.backward(d)
+        #d = self.linear_layers.backward(d)
+        d=self.linear.backward(d)
         return d
 
 
@@ -49,7 +53,7 @@ class Net(ff.Module):
                 loss = criterion(output, train_target.narrow(0, b, batch_size))
                 sum_loss = sum_loss + loss.item()
                 #self.zero_grad() #TODO?
-                self.backward(criterion)  
+                self.backward(criterion) 
                 #with ff.no_grad():
                 for p in self.parameters(): #TODO: working in progress
                     p.p -= eta * p.grad
