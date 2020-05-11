@@ -1,6 +1,4 @@
-#from torch import empty
 import torch 
-from torch import empty 
 import math
 
 class Module(object):
@@ -102,64 +100,62 @@ class Linear(Layer):
         self.params['W'] = Parameter()
         self.params['b'] = Parameter()
         self.params['W'].p = scale * \
-            empty(in_dim, out_dim).normal_(mean=0, std=std)
+            torch.empty(in_dim, out_dim).normal_(mean=0, std=std)
         self.params['b'].p = scale * \
-            empty(1, out_dim).normal_(mean=0, std=std)
+            torch.empty(1, out_dim).normal_(mean=0, std=std)
 
-    def forward(self, input):
-        output = torch.mm(input, self.params['W'].p) + self.params['b'].p
+    def forward(self, *input):
+        output = torch.mm(input[0], self.params['W'].p) + self.params['b'].p
         # caching variables for backprop
         self.cache['input'] = input
         self.cache['output'] = output
 
         return output
 
-    def backward(self, dy):
+    def backward(self, *dy):
         # calculating the global gradient, to be propagated backwards
-        print('dy: ', dy)
-        dx = torch.mm(dy, self.grad['input'].transpose())
+        dx = torch.mm(*dy, self.grad['input'].transpose())
         # calculating the global gradient wrt to paramss
         input = self.cache['input']
-        dw = torch.mm(self.grad['W'].p.transpose(), dy)
-        db = torch.sum(dy, dim=0, keepdim=True)
+        dw = torch.mm(self.grad['W'].p.transpose(), *dy)
+        db = torch.sum(*dy, dim=0, keepdim=True)
         # caching the global gradients
         self.grad['W'].grad = dw
         self.grad['b'].grad = db
         return dx
 
+    def local_grad(self, *input):
+        return self.grad
+
     def __repr__(self):
         return "Linear({}, {})".format(self.in_dim, self.out_dim)
 
 class Loss(Module):
-    def forward(self, input, y):
-        pass
 
-    def backward(self):
+    def backward(self, *input):
         return self.grad['input']
 
-    def local_grad(self, input, y):
-        pass
 
 
 class MSELoss(Loss):
-    def __call__(self, input, y):
+    def __call__(self, *input):
         # calculating output
-        output = self.forward(input,y)
+        output = self.forward(input[0], input[1])
         # calculating and caching local gradients
-        self.grad = self.local_grad(input,y)
+        self.grad = self.local_grad(input[0], input[1])
         return output
 
-    def forward(self, input, y):
+    def forward(self, *input):
         # calculating MSE loss
-        loss =  ((input-y)**2).mean()
+        loss =  ((input[0]-input[1])**2).mean()
 
         # caching for backprop
-        self.cache['y'] = y
+        self.cache['y'] = input[1]
 
         return loss
 
-    def local_grad(self, input, y):
-        return {'input': 2*(input-y).mean()}
+    def local_grad(self, *input):
+        return {'input': 2*(input[0]-input[1])}
 
     def __repr__(self):
         return "MSELoss()"

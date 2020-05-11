@@ -1,31 +1,28 @@
-from torch import empty
 import math
 import torch 
 
-def generate_set_crossEntropy(nb):
-    input = empty(nb, 2).uniform_(0, 1)
-    target = input.pow(2).sum(dim = 1).sub(1 / (2*math.pi)).sign().sub(-1).div(-2).long()
+def generate_set(nb, one_hot):
+    input = torch.empty(nb, 2).uniform_(0, 1)
+    target = input.pow(2).sum(dim = 1).sub(1 / (2*math.pi)).sign().sub(-1).div(2).long()
+    if one_hot:
+        target = convert_to_one_hot_labels(input, target)
     return input, target
 
-def generate_set_MSEloss(nb):
-    input = empty(nb, 2).uniform_(0, 1)
-    label = -input.pow(2).sum(dim = 1).sub(1 / (2*math.pi)).sign().sub(-1).div(-2).long()
-    target = torch.zeros(nb, 2)
-    for i in label: 
-        target[i]=1
-    return input, target
-
-def generate_data(nb, normalize = False):
-    train, train_target = generate_set_MSEloss(nb)
-    test, test_target = generate_set_MSEloss(nb)
+def generate_data(nb, normalize=False, one_hot=True):
+    train_input, train_target = generate_set(nb, one_hot)
+    test_input, test_target = generate_set(nb, one_hot)
 
     if normalize:
-        mu, std = train[0].mean(), train[0].std()
-        train[0].sub_(mu).div_(std)
-        test[0].sub_(mu).div_(std)
+        mu, std = train_input.mean(), train_input.std()
+        train_input.sub_(mu).div_(std)
+        test_input.sub_(mu).div_(std)
 
-    return train, train_target, test, test_target
+    return train_input, train_target, test_input, test_target
 
+def convert_to_one_hot_labels(input, target):
+    tmp = input.new_zeros(target.size(0), target.max() + 1)
+    tmp.scatter_(1, target.view(-1, 1), 1.0)
+    return tmp
 
 def plot_results(train_losses, train_errors, test_errors):
     import matplotlib.pyplot as plt

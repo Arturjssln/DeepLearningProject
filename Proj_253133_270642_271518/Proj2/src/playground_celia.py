@@ -1,4 +1,4 @@
-from Net import Net
+from Net_test import Net
 import framework as ff
 from utils import generate_data, plot_results
 
