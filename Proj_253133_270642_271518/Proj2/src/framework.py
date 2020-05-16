@@ -83,7 +83,7 @@ class Layer(Module):
 
     def parameters(self):
         params = []
-        for key, param in self.params.items():
+        for _, param in self.params.items():
             params.append(param)
         return params
 
@@ -109,17 +109,12 @@ class Linear(Layer):
         # caching variables for backprop
         self.cache['input'] = input[0]
         self.cache['output'] = output
-
         return output
 
     def backward(self, *dy):
         # calculating the global gradient, to be propagated backwards
-        dx = torch.mm(*dy, self.cache['input'].t())
-        # calculating the global gradient wrt to paramss
-        input = self.cache['input']
-        # TODO: VERIFY FOLLOWING 2 LINES !!!
-        dw = torch.mm(*dy, self.params['W'].p.t())
-        dw = torch.sum(dw, dim=0)/dw.shape[0]
+        dx = torch.mm(*dy, self.grad['input'].t())
+        dw = torch.mm(self.grad['W'].t(), *dy)
         db = torch.sum(*dy, dim=0, keepdim=True)
         # caching the global gradients
         self.params['W'].grad = dw
@@ -127,7 +122,10 @@ class Linear(Layer):
         return dx
 
     def local_grad(self, *input):
-        return self.grad
+        dx_local = self.params['W'].p
+        dw_local = self.cache['input']
+        db_local = torch.ones_like(self.params['b'].p)
+        return {'input': dx_local, 'W': dw_local, 'b': db_local}
 
     def __repr__(self):
         return "Linear({}, {})".format(self.in_dim, self.out_dim)
@@ -149,15 +147,11 @@ class MSELoss(Loss):
 
     def forward(self, *input):
         # calculating MSE loss
-        loss =  ((input[0]-input[1])**2).mean()
-
-        # caching for backprop
-        self.cache['y'] = input[1]
-
+        loss =  torch.sum((input[0]-input[1])**2, dim=1, keepdim=True).mean()
         return loss
 
     def local_grad(self, *input):
-        return {'input': 2*(input[0]-input[1])}
+        return {'input': 2*(input[0]-input[1])/input[0].shape[0]}
 
     def __repr__(self):
         return "MSELoss()"
