@@ -13,8 +13,6 @@ class Net(ff.Module):
                                             ff.Linear(nb_nodes, nb_nodes), act_fct, \
                                             ff.Linear(nb_nodes, nb_nodes), act_fct, \
                                             ff.Linear(nb_nodes, 2))
-        
-
     def __call__(self, x):
         return self.forward(x)
     
@@ -27,8 +25,6 @@ class Net(ff.Module):
     def forward(self, x):
         return self.linear_layers(x)
 
-    def parameters(self):
-        return self.linear_layers.parameters()
 
     def backward(self, criterion):
         d = criterion.backward()

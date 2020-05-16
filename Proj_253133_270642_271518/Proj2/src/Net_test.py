@@ -17,8 +17,6 @@ class Net(ff.Module):
     def forward(self, x):
         return self.linear(x)
 
-    def parameters(self):
-        return self.linear.parameters()
 
     def backward(self, criterion):
         d = criterion.backward()

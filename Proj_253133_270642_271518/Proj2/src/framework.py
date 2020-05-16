@@ -8,6 +8,7 @@ class Module(object):
         self.cache = {}
         # cache for gradients
         self.grad = {}
+        self._parameters = {}
 
     def __call__(self, *input):
         # calculating output
@@ -31,7 +32,10 @@ class Module(object):
         pass
 
     def parameters(self):
-        return {}
+        parameters = []
+        for key in self._parameters:
+            parameters.extend(self._parameters[key].parameters())
+        return parameters
 
     def __repr__(self):
         pass
@@ -39,8 +43,17 @@ class Module(object):
     def __str__(self):
         return self.__repr__()
 
+    def __setattr__(self, name, value):
+        super(Module, self).__setattr__(name, value)
+        # If attribut is a Module, add it to the parameters
+        if issubclass(type(value), Module):
+            self._parameters[name] = value
+
 
 class ReLU(Module):
+    def __init__(self, *input):
+        super().__init__()
+
     def forward(self, *input):
         return input[0]*(input[0] > 0)
 
@@ -56,6 +69,9 @@ class ReLU(Module):
 
 
 class Tanh(Module):
+    def __init__(self, *input):
+        super().__init__()
+
     def forward(self, *input):
         return math.tanh(input)
 
@@ -72,7 +88,7 @@ class Tanh(Module):
 
 class Layer(Module):
     def __init__(self, *input):
-        super().__init__(*input)
+        super().__init__()
         self.params = {}
 
     def _init_params(self, *args):
