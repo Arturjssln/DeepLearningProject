@@ -15,7 +15,7 @@ class Module(object):
         # calculating and caching local gradients
         self.grad = self.local_grad(*input)
         return output
-
+    
 
     def forward(self, *input):
         """
@@ -42,10 +42,10 @@ class Module(object):
 
 class ReLU(Module):
     def forward(self, *input):
-        return input if input > 0 else 0
+        return input[0]*(input[0] > 0)
 
     def local_grad(self, *input):
-        return {'input': 1} if input > 0 else {'input': 0}
+        return {'input': 1*(input[0] > 0)}
 
     def backward(self, dy):
         return dy * self.grad['input']
@@ -174,7 +174,7 @@ class Sequential(Module):
     def forward(self, input):
         out = input
         for layer in self.layers:
-            out = layer.forward(out)
+            out = layer(out)
         return out
 
     def backward(self, dy):
@@ -186,6 +186,6 @@ class Sequential(Module):
     def __repr__(self):
         out = "Sequential(\n"
         for i, layer in enumerate(self.layers):
-            out += '({}) '.format(i) + layer.__repr__() + '\n'
+            out += '    ({}) '.format(i) + layer.__repr__() + '\n'
         out += ')'
         return out

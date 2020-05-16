@@ -18,6 +18,12 @@ class Net(ff.Module):
     def __call__(self, x):
         return self.forward(x)
     
+    def __repr__(self):
+        return 'model : \n'+self.linear_layers.__repr__()
+
+    def __str__(self):
+        return self.__repr__()
+
     def forward(self, x):
         return self.linear_layers(x)
 
@@ -35,7 +41,7 @@ class Net(ff.Module):
                 train_input, train_target, \
                 test_input = None, test_target = None, \
                 batch_size = 10, epoch = 50, \
-                eta = 1e-1, criterion = ff.MSELoss(), print_skip = 5):
+                eta = 1e-2, criterion = ff.MSELoss(), print_skip = 5):
         """
         Training method
         """
@@ -50,7 +56,7 @@ class Net(ff.Module):
                 loss = criterion(output, train_target.narrow(0, b, batch_size))
                 sum_loss = sum_loss + loss.item()
                 self.backward(criterion) 
-                for p in self.parameters(): 
+                for p in self.parameters():
                     p.p -= eta * p.grad
 
 
@@ -59,7 +65,7 @@ class Net(ff.Module):
             self.test_error.append(self.compute_error_rate(test_input, test_target, batch_size))
 
             if e%print_skip == 0:
-                print("Epoch #{:d} --> Total train loss : {:.03f} ".format(e,  self.sumloss[-1]))
+                print("Epoch #{:2d} --> Total train loss : {:.03f} ".format(e,  self.sumloss[-1]))
                 print("------------> Train error rate : {:.02f}% ".format(self.train_error[-1]*100))
                 if test_input is not None and test_target is not None:
                     print("------------> Test error rate : {:.02f}% ".format(self.test_error[-1]*100))
@@ -69,7 +75,7 @@ class Net(ff.Module):
             if self.test_error[self.best_epoch] > self.test_error[-1]:
                 self.best_epoch = e
 
-        print("** BEST SCORE --> Epoch #{:d}: \n*  train_error: {:.02f}%, \n*  test_error: {:.02f}%"\
+        print("** BEST SCORE --> Epoch #{:2d}: \n*  train_error: {:.02f}%, \n*  test_error: {:.02f}%"\
             .format(self.best_epoch, self.train_error[self.best_epoch]*100, self.test_error[self.best_epoch]*100))
 
     def compute_error_rate(self, input, target, batch_size):
