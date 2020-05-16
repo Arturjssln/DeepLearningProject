@@ -84,8 +84,8 @@ class Layer(Module):
     def parameters(self):
         params = []
         for key, param in self.params.items():
-                params.append(param)
-        return self.params
+            params.append(param)
+        return params
 
 
 class Linear(Layer):
@@ -107,21 +107,23 @@ class Linear(Layer):
     def forward(self, *input):
         output = torch.mm(input[0], self.params['W'].p) + self.params['b'].p
         # caching variables for backprop
-        self.cache['input'] = input
+        self.cache['input'] = input[0]
         self.cache['output'] = output
 
         return output
 
     def backward(self, *dy):
         # calculating the global gradient, to be propagated backwards
-        dx = torch.mm(*dy, self.grad['input'].transpose())
+        dx = torch.mm(*dy, self.cache['input'].t())
         # calculating the global gradient wrt to paramss
         input = self.cache['input']
-        dw = torch.mm(self.grad['W'].p.transpose(), *dy)
+        # TODO: VERIFY FOLLOWING 2 LINES !!!
+        dw = torch.mm(*dy, self.params['W'].p.t())
+        dw = torch.sum(dw, dim=0)/dw.shape[0]
         db = torch.sum(*dy, dim=0, keepdim=True)
         # caching the global gradients
-        self.grad['W'].grad = dw
-        self.grad['b'].grad = db
+        self.params['W'].grad = dw
+        self.params['b'].grad = db
         return dx
 
     def local_grad(self, *input):

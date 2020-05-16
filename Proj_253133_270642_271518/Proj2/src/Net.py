@@ -82,7 +82,7 @@ class Net(ff.Module):
             _, predicted_classes = prediction.max(dim = 1)
             # Calculate test error
             for pred, t in zip(predicted_classes, target.narrow(0, b, batch_size)):
-                if pred.item() != t.item():
+                if pred.item() != t.argmax():
                     error += 1
         error /= target.size(0)
         return error
