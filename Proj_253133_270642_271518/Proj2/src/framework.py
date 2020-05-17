@@ -1,20 +1,21 @@
 import torch 
 import math
+from collections import OrderedDict
 
 class Module(object):
     def __init__(self):
         # initializing cache for intermediate results
         # helps with gradient calculation in some cases
-        self.cache = {}
+        self._cache = OrderedDict()
         # cache for gradients
-        self.grad = {}
-        self._parameters = {}
+        self._grad = OrderedDict()
+        self._parameters = OrderedDict()
 
     def __call__(self, *input):
         # calculating output
         output = self.forward(*input)
         # calculating and caching local gradients
-        self.grad = self.local_grad(*input)
+        self._grad = self.local_grad(*input)
         return output
     
 
@@ -23,10 +24,10 @@ class Module(object):
         Forward pass of the function. Calculates the output value and the
         gradient at the input as well.
         """
-        pass
+        raise NotImplementedError
 
     def backward(self, *gradwrtoutput):
-        pass
+        raise NotImplementedError
 
     def local_grad(self, *input):
         pass
@@ -38,10 +39,12 @@ class Module(object):
         return parameters
 
     def __repr__(self):
-        pass
+        out = self.__class__.__name__ + ' :\n'
+        for key in self._parameters:
+            out += self._parameters[key].__repr__() + '\n'
+        return out
     
-    def __str__(self):
-        return self.__repr__()
+    __str__ = __repr__
 
     def __setattr__(self, name, value):
         super(Module, self).__setattr__(name, value)
@@ -61,7 +64,7 @@ class ReLU(Module):
         return {'input': 1*(input[0] > 0)}
 
     def backward(self, dy):
-        return dy * self.grad['input']
+        return dy * self._grad['input']
 
     def __repr__(self):
         return "ReLU()"
@@ -76,7 +79,7 @@ class Tanh(Module):
         return math.tanh(input)
 
     def backward(self, dy):
-        return dy * self.grad['input']
+        return dy * self._grad['input']
 
     def local_grad(self, *input):
         s = 1 - math.tanh(input)**2
@@ -105,32 +108,30 @@ class Layer(Module):
 
 
 class Linear(Layer):
-    def __init__(self, in_dim, out_dim):
+    def __init__(self, dim_in, dim_out):
         super().__init__()
-        self.in_dim = in_dim
-        self.out_dim = out_dim
-        self._init_params(in_dim, out_dim)
+        self.in_dim = dim_in
+        self.out_dim = dim_out
+        self._init_params(dim_in, dim_out)
 
-    def _init_params(self, in_dim, out_dim, std = 1e-6):
-        scale = 1 / math.sqrt(in_dim)
+    def _init_params(self, dim_in, dim_out, std=1e-6):
+        scale = 1 / math.sqrt(dim_in)
         self.params['W'] = Parameter()
         self.params['b'] = Parameter()
-        self.params['W'].p = scale * \
-            torch.empty(in_dim, out_dim).normal_(mean=0, std=std)
-        self.params['b'].p = scale * \
-            torch.empty(1, out_dim).normal_(mean=0, std=std)
+        self.params['W'].p = torch.empty(dim_in, dim_out).uniform_(-std, std)
+        self.params['b'].p = torch.empty(1, dim_out).normal_(-std, std)
 
     def forward(self, *input):
         output = torch.mm(input[0], self.params['W'].p) + self.params['b'].p
         # caching variables for backprop
-        self.cache['input'] = input[0]
-        self.cache['output'] = output
+        self._cache['input'] = input[0]
+        self._cache['output'] = output
         return output
 
     def backward(self, *dy):
         # calculating the global gradient, to be propagated backwards
-        dx = torch.mm(*dy, self.grad['input'].t())
-        dw = torch.mm(self.grad['W'].t(), *dy)
+        dx = torch.mm(*dy, self._grad['input'].t())
+        dw = torch.mm(self._grad['W'].t(), *dy)
         db = torch.sum(*dy, dim=0, keepdim=True)
         # caching the global gradients
         self.params['W'].grad = dw
@@ -139,7 +140,7 @@ class Linear(Layer):
 
     def local_grad(self, *input):
         dx_local = self.params['W'].p
-        dw_local = self.cache['input']
+        dw_local = self._cache['input']
         db_local = torch.ones_like(self.params['b'].p)
         return {'input': dx_local, 'W': dw_local, 'b': db_local}
 
@@ -149,18 +150,11 @@ class Linear(Layer):
 class Loss(Module):
 
     def backward(self, *input):
-        return self.grad['input']
+        return self._grad['input']
 
 
 
 class MSELoss(Loss):
-    def __call__(self, *input):
-        # calculating output
-        output = self.forward(input[0], input[1])
-        # calculating and caching local gradients
-        self.grad = self.local_grad(input[0], input[1])
-        return output
-
     def forward(self, *input):
         # calculating MSE loss
         loss =  torch.sum((input[0]-input[1])**2, dim=1, keepdim=True).mean()
@@ -184,7 +178,7 @@ class Sequential(Module):
     def parameters(self):
         params = []
         for layer in self.layers:
-            params += list(layer.parameters())
+            params.extend(layer.parameters())
         return params
 
     def forward(self, input):

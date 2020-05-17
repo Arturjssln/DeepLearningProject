@@ -15,23 +15,14 @@ class Net(ff.Module):
                                             ff.Linear(nb_nodes, 2))
     def __call__(self, x):
         return self.forward(x)
-    
-    def __repr__(self):
-        return 'model : \n'+self.linear_layers.__repr__()
-
-    def __str__(self):
-        return self.__repr__()
 
     def forward(self, x):
         return self.linear_layers(x)
-
 
     def backward(self, criterion):
         d = criterion.backward()
         d = self.linear_layers.backward(d)
         return d
-
-
 
     def train(  self, \
                 train_input, train_target, \
@@ -41,7 +32,6 @@ class Net(ff.Module):
         """
         Training method
         """
-
         for e in range(epoch):
             sum_loss = 0
             # We do this with mini-batches
