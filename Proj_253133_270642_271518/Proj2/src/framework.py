@@ -1,6 +1,7 @@
 import torch 
 import math
 from collections import OrderedDict
+import warnings 
 
 class Module(object):
     def __init__(self):
@@ -58,7 +59,10 @@ class ReLU(Module):
         super().__init__()
 
     def forward(self, *input):
-        return input[0]*(input[0] > 0)
+        if len(input) > 1:
+            warnings.warn("Input for ReLU must be composed of only one element, supplementary arguments are ignored.")
+        input = input[0]
+        return input*(input > 0)
 
     def local_grad(self, *input):
         return {'input': 1*(input[0] > 0)}
@@ -76,6 +80,10 @@ class Tanh(Module):
         super().__init__()
 
     def forward(self, *input):
+        if len(input) > 1:
+            warnings.warn(
+                "Input for Tanh must be composed of only one element, supplementary arguments are ignored.")
+        input = input[0]
         return math.tanh(input)
 
     def backward(self, dy):
@@ -122,9 +130,13 @@ class Linear(Layer):
         self.params['b'].p = torch.empty(1, dim_out).normal_(-std, std)
 
     def forward(self, *input):
-        output = torch.mm(input[0], self.params['W'].p) + self.params['b'].p
+        if len(input) > 1:
+            warnings.warn(
+                "Input for Linear must be composed of only one element, supplementary arguments are ignored.")
+        input = input[0]
+        output = torch.mm(input, self.params['W'].p) + self.params['b'].p
         # caching variables for backprop
-        self._cache['input'] = input[0]
+        self._cache['input'] = input
         self._cache['output'] = output
         return output
 
@@ -156,6 +168,12 @@ class Loss(Module):
 
 class MSELoss(Loss):
     def forward(self, *input):
+        if len(input) < 2:
+            raise RuntimeError(
+                "Too few arguments given. Exactly 2 arguments expected.")
+        if len(input) > 2:
+            warnings.warn(
+                "Input for Linear must be composed of exactly two arguments, supplementary arguments are ignored.")
         # calculating MSE loss
         loss =  torch.sum((input[0]-input[1])**2, dim=1, keepdim=True).mean()
         return loss
@@ -181,8 +199,11 @@ class Sequential(Module):
             params.extend(layer.parameters())
         return params
 
-    def forward(self, input):
-        out = input
+    def forward(self, *input):
+        if len(input) > 1:
+            warnings.warn(
+                "Input for Sequential must be composed of only one element, supplementary arguments are ignored.")
+        out = input[0]
         for layer in self.layers:
             out = layer(out)
         return out
