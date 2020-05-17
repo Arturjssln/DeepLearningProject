@@ -31,7 +31,7 @@ class Module(object):
         raise NotImplementedError
 
     def local_grad(self, *input):
-        pass
+        return None
 
     def parameters(self):
         parameters = []

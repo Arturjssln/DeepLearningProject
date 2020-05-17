@@ -1,6 +1,6 @@
 import torch
 from torchvision import datasets
-
+import matplotlib.pyplot as plt
 import os
 
 
@@ -137,7 +137,31 @@ def plot_results(train_losses, train_errors, test_errors, goal_errors, force_err
     else:
         plt.show(block = False)
 
-    
+def plot_training(train_losses, train_errors, test_errors, goal_errors):
+
+    epoch = len(train_losses)
+
+    train_losses = torch.FloatTensor(train_losses)
+    train_errors = torch.FloatTensor(train_errors)
+    test_errors = torch.FloatTensor(test_errors)
+    goal_errors = torch.FloatTensor(goal_errors)
+
+    plt.style.use('seaborn-whitegrid')
+    plt.subplot(121)
+    plt.plot(range(epoch), train_losses)
+    plt.legend(['Train loss'])
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.subplot(122)
+    plt.plot(range(epoch), train_errors*100)
+    plt.plot(range(epoch), test_errors*100, '--')
+    plt.plot(range(epoch), goal_errors*100)
+    plt.legend(['Train', 'Test (number prediction)', 'Test (goal prediction)'])
+    plt.xlabel('Epoch')
+    plt.ylabel('Error rate (in %)')
+    plt.ylim(0, 100)
+    plt.show()
+
 
 ######################################################################
 
