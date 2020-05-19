@@ -7,7 +7,7 @@ class Module(object):
     def __init__(self):
         # initializing cache for intermediate results
         # helps with gradient calculation in some cases
-        self._cache = OrderedDict()
+        self._store = OrderedDict()
         # cache for gradients
         self._grad = OrderedDict()
         self._parameters = OrderedDict()
@@ -31,13 +31,20 @@ class Module(object):
         raise NotImplementedError
 
     def local_grad(self, *input):
-        return None
+        return OrderedDict()
 
     def parameters(self):
         parameters = []
         for key in self._parameters:
             parameters.extend(self._parameters[key].parameters())
         return parameters
+
+    def zero_grad(self):
+        for key in self._parameters:
+            self._parameters[key].reset_grad()
+
+    def reset_grad(self):
+        pass
 
     def __repr__(self):
         out = self.__class__.__name__ + ' :\n'
@@ -56,19 +63,19 @@ class Module(object):
 
 class ReLU(Module):
     def __init__(self, *input):
-        super().__init__()
+        super(ReLU, self).__init__()
 
     def forward(self, *input):
         if len(input) > 1:
             warnings.warn("Input for ReLU must be composed of only one element, supplementary arguments are ignored.")
-        input = input[0]
-        return input*(input > 0)
+        x = input[0]
+        return x*(x > 0)
 
     def local_grad(self, *input):
-        return {'input': 1*(input[0] > 0)}
+        return {'x': 1*(input[0] > 0)}
 
     def backward(self, dy):
-        return dy * self._grad['input']
+        return dy * self._grad['x']
 
     def __repr__(self):
         return "ReLU()"
@@ -77,21 +84,21 @@ class ReLU(Module):
 
 class Tanh(Module):
     def __init__(self, *input):
-        super().__init__()
+        super(Tanh, self).__init__()
 
     def forward(self, *input):
         if len(input) > 1:
             warnings.warn(
                 "Input for Tanh must be composed of only one element, supplementary arguments are ignored.")
-        input = input[0]
-        return math.tanh(input)
+        x = input[0]
+        return math.tanh(x)
 
     def backward(self, dy):
-        return dy * self._grad['input']
+        return dy * self._grad['x']
 
     def local_grad(self, *input):
         s = 1 - math.tanh(input)**2
-        return {'input': s}
+        return {'x': s}
 
     def __repr__(self):
         return "Tanh()"
@@ -99,7 +106,7 @@ class Tanh(Module):
 
 class Layer(Module):
     def __init__(self, *input):
-        super().__init__()
+        super(Layer, self).__init__()
         self.params = {}
 
     def _init_params(self, *args):
@@ -107,6 +114,10 @@ class Layer(Module):
         Initializes the params.
         """
         pass
+
+    def reset_grad(self):
+        for key in self.params:
+            self.params[key].reset_grad()
 
     def parameters(self):
         params = []
@@ -117,54 +128,50 @@ class Layer(Module):
 
 class Linear(Layer):
     def __init__(self, dim_in, dim_out):
-        super().__init__()
+        super(Linear, self).__init__()
         self.in_dim = dim_in
         self.out_dim = dim_out
         self._init_params(dim_in, dim_out)
 
-    def _init_params(self, dim_in, dim_out, std=1e-6):
+    def _init_params(self, dim_in, dim_out):
         scale = 1 / math.sqrt(dim_in)
-        self.params['W'] = Parameter()
-        self.params['b'] = Parameter()
-        self.params['W'].p = torch.empty(dim_in, dim_out).uniform_(-std, std)
-        self.params['b'].p = torch.empty(1, dim_out).normal_(-std, std)
+        self.params['W'] = Parameter(torch.empty(dim_in, dim_out).uniform_(-scale, scale))
+        self.params['b'] = Parameter(torch.empty(1, dim_out).uniform_(-scale, scale))
 
     def forward(self, *input):
         if len(input) > 1:
             warnings.warn(
                 "Input for Linear must be composed of only one element, supplementary arguments are ignored.")
-        input = input[0]
-        output = torch.mm(input, self.params['W'].p) + self.params['b'].p
-        # caching variables for backprop
-        self._cache['input'] = input
-        self._cache['output'] = output
+        x = input[0]
+        output = torch.mm(x, self.params['W'].p) + self.params['b'].p
+        # Storing for backprop
+        self._store['x'] = x
+        self._store['output'] = output
         return output
 
     def backward(self, *dy):
-        # calculating the global gradient, to be propagated backwards
-        dx = torch.mm(*dy, self._grad['input'].t())
+        dx = torch.mm(*dy, self._grad['x'].t())
         dw = torch.mm(self._grad['W'].t(), *dy)
         db = torch.sum(*dy, dim=0, keepdim=True)
-        # caching the global gradients
-        self.params['W'].grad = dw
-        self.params['b'].grad = db
+        self.params['W'].grad += dw
+        self.params['b'].grad += db
         return dx
 
     def local_grad(self, *input):
         dx_local = self.params['W'].p
-        dw_local = self._cache['input']
+        dw_local = self._store['x']
         db_local = torch.ones_like(self.params['b'].p)
-        return {'input': dx_local, 'W': dw_local, 'b': db_local}
+        return {'x': dx_local, 'W': dw_local, 'b': db_local}
 
     def __repr__(self):
         return "Linear({}, {})".format(self.in_dim, self.out_dim)
 
 class Loss(Module):
+    def __init__(self):
+        super(Loss, self).__init__()
 
     def backward(self, *input):
-        return self._grad['input']
-
-
+        return self._grad['x']
 
 class MSELoss(Loss):
     def forward(self, *input):
@@ -173,21 +180,55 @@ class MSELoss(Loss):
                 "Too few arguments given. Exactly 2 arguments expected.")
         if len(input) > 2:
             warnings.warn(
-                "Input for Linear must be composed of exactly two arguments, supplementary arguments are ignored.")
-        # calculating MSE loss
+                "Input for MSELoss must be composed of exactly two arguments, supplementary arguments are ignored.")
         loss =  torch.sum((input[0]-input[1])**2, dim=1, keepdim=True).mean()
         return loss
 
     def local_grad(self, *input):
-        return {'input': 2*(input[0]-input[1])/input[0].shape[0]}
+        return {'x': 2*(input[0]-input[1])/input[0].shape[0]}
 
     def __repr__(self):
         return "MSELoss()"
 
+
+class CrossEntropyLoss(Loss):
+    def forward(self, *input):
+        if len(input) < 2:
+            raise RuntimeError(
+                "Too few arguments given. Exactly 2 arguments expected.")
+        if len(input) > 2:
+            warnings.warn(
+                "Input for CrossEntropyLoss must be composed of exactly two arguments, supplementary arguments are ignored.")
+        input_ = input[0]
+        target_ = input[1]
+        proba =  softmax(input_)
+        log_likelihood = -torch.log(proba[range(target_.size(0)), target_])
+        crossentropy_loss = torch.mean(log_likelihood)
+
+        # Storing for backprop
+        self._store['p'] = proba
+        self._store['t'] = target_
+
+        return crossentropy_loss
+
+    def local_grad(self, *input):
+        grad = self._store['p']
+        t = self._store['t']
+        grad[range(t.size(0)), t] -= 1
+        grad /= t.size(0)
+        return {'x': grad}
+
+    def __repr__(self):
+        return "CrossEntropyLoss()"
+
+
 class Parameter(object):
-    def __init__(self):
-        self.p = None
-        self.grad  = None
+    def __init__(self, param):
+        self.p = param
+        self.grad = torch.zeros_like(self.p)
+
+    def reset_grad(self):
+        self.grad = torch.zeros_like(self.p)
 
 class Sequential(Module):
     def __init__(self, *layers):
@@ -198,6 +239,10 @@ class Sequential(Module):
         for layer in self.layers:
             params.extend(layer.parameters())
         return params
+    
+    def reset_grad(self):
+        for layer in self.layers:
+            layer.reset_grad()
 
     def forward(self, *input):
         if len(input) > 1:
@@ -220,3 +265,12 @@ class Sequential(Module):
             out += '    ({}) '.format(i) + layer.__repr__() + '\n'
         out += ')'
         return out
+
+
+
+# UTILITY FUNCTION
+
+def softmax(input_):
+    exps = torch.exp(input_)
+    proba = exps / torch.sum(exps, dim=1, keepdim=True)
+    return proba

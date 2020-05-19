@@ -25,8 +25,8 @@ class Net(ff.Module):
     def train(  self, \
                 train_input, train_target, \
                 test_input = None, test_target = None, \
-                batch_size = 10, epoch = 50, \
-                eta = 1e-2, criterion = ff.MSELoss(), print_skip = 5):
+                batch_size = 100, epoch = 50, \
+                eta = 1e-1, criterion = ff.MSELoss(), print_skip = 5):
         """
         Training method
         """
@@ -39,6 +39,8 @@ class Net(ff.Module):
                 # Forward + save local grad of loss layer
                 loss = criterion(output, train_target.narrow(0, b, batch_size))
                 sum_loss = sum_loss + loss.item()
+
+                self.zero_grad()
                 self.backward(criterion) 
                 for p in self.parameters():
                     p.p -= eta * p.grad
@@ -72,7 +74,8 @@ class Net(ff.Module):
             _, predicted_classes = prediction.max(dim = 1)
             # Calculate test error
             for pred, t in zip(predicted_classes, target.narrow(0, b, batch_size)):
-                if pred.item() != t.argmax():
+                t_class = t.item() if t.ndim == 0 else t.argmax()
+                if pred.item() != t_class:
                     error += 1
         error /= target.size(0)
         return error

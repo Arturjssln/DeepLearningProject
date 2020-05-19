@@ -1,5 +1,6 @@
 import math
 import torch 
+import matplotlib.pyplot as plt
 
 def generate_set(nb, one_hot):
     input = torch.empty(nb, 2).uniform_(0, 1)
@@ -25,7 +26,6 @@ def convert_to_one_hot_labels(input, target):
     return tmp
 
 def plot_results(train_losses, train_errors, test_errors):
-    import matplotlib.pyplot as plt
 
     epoch = len(train_losses)
 
@@ -33,7 +33,6 @@ def plot_results(train_losses, train_errors, test_errors):
     train_errors = torch.FloatTensor(train_errors)
     test_errors = torch.FloatTensor(test_errors)
 
-    plt.style.use('seaborn-whitegrid')
     plt.subplot(121)
     plt.plot(range(epoch), train_losses)
     plt.legend(['Train loss'])
@@ -46,4 +45,22 @@ def plot_results(train_losses, train_errors, test_errors):
     plt.xlabel('Epoch')
     plt.ylabel('Error rate (in %)')
     plt.ylim(0, 100)
+
+def plot_prediction(input, target, model):
+    if target.ndim == 2: 
+        # Convert one_hot to normal prediction
+        target = target.argmax(dim=1)
+    plt.figure()
+    prediction = model(input)
+    classes = torch.unique(target)
+    _, predicted_classes = prediction.max(dim=1)
+    for c in classes:
+        plt.scatter(input[c == predicted_classes, 0],
+                    input[c == predicted_classes, 1], label='class ' + str(c.item()))
+    plt.scatter(input[predicted_classes != target, 0],
+                input[predicted_classes != target, 1], color='red', label='misclassified')
+    plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+               mode="expand", borderaxespad=0, ncol=3)
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.show()
