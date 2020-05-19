@@ -1,36 +1,16 @@
-import torch
+from net_test import Net
+import framework as ff
+from utils import generate_data, plot_results
 
-torch.set_grad_enabled(False)
+## Generate dataset
+DATASET_SIZE = 1000
+train_input, train_target, test_input, test_target = generate_data(
+    DATASET_SIZE)
 
-class Module(object):
-    autograd = True
-    def __init__(self):
-        self.var = 1
+model = Net(nb_nodes=25)
 
-    @classmethod
-    def print_grad(cls):
-        print("autograd =", Module.autograd)
+## Training model
+model.train(train_input, train_target, test_input, test_target)
 
-
-
-class no_grad(Module):
-    def __enter__(self):
-        Module.autograd = False
-
-    def __exit__(self ,type, value, traceback):
-        Module.autograd = True
-
-
-class Cercle(Module):
-    def __init__(self):
-        super(Cercle, self).__init__
-
-t = torch.ones([1, 2], requires_grad=True)
-t = t + t
-print(t.grad_fn)
-
-c = Cercle()
-c.print_grad()
-with no_grad():
-     c.print_grad()
-c.print_grad()
+## Ploting results
+plot_results(model.sumloss, model.train_error, model.test_error)

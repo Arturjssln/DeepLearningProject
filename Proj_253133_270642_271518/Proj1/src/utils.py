@@ -101,7 +101,7 @@ def generate_data(datasize, normalize):
 ######################################################################
 
 
-def plot_results(train_losses, train_errors, test_errors, goal_errors, force_error_axis = False, save=False, save_title=None):
+def plot_results(train_losses, train_errors, test_errors, goal_errors, force_error_axis = False, save=False, save_title=None, best = None):
 
     import matplotlib.pyplot as plt
 
@@ -136,6 +136,11 @@ def plot_results(train_losses, train_errors, test_errors, goal_errors, force_err
         plt.savefig('{}.png'.format(save_title))
     else:
         plt.show(block = False)
+
+    if best is not None:
+        best = torch.FloatTensor(best)
+        print("Train error : {:.03f} ± {:.03f}% \nTest error : {:.03f} ± {:.03f}% \nTest goal error : {:.03f} ± {:.03f}%".format(
+            best[:, 0].mean(), best[:, 0].std(), best[:, 1].mean(), best[:, 1].std(), best[:, 2].mean(), best[:, 2].std()))
 
 def plot_training(train_losses, train_errors, test_errors, goal_errors):
 

@@ -14,7 +14,7 @@ parser.add_argument('--datasize',
                     help = 'Number of pairs used for training and for testing (default: 1000)')
 
 parser.add_argument('--architecture',
-                    type = str, default = None,
+                    type = str, default = 'linear',
                     help = 'Architecture of Neural Network to use (can be ????; default: ????)')
 
 parser.add_argument('--loss',
@@ -110,9 +110,9 @@ if args.architecture == 'linear':
     nb_nodes = args.nodes
     args.auxloss = False
     if args.deep:
-        nb_linear_layers = 5
+        nb_linear_layers = 2
     else:
-        nb_linear_layers = 3
+        nb_linear_layers = 1
 
     print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 
@@ -127,7 +127,7 @@ elif args.architecture == 'resnet':
         print("*  WARNING KERNEL SIZE MUST BE GREATER THAN 2, CHANGED KERNEL SIZE TO 3")
         kernel_size = 3
 
-    optimizer = 'SGD'
+    args.optimizer = 'SGD'
     print(  "*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(nb_residual_blocks, nb_channels, kernel_size))
 
 elif args.architecture == 'lenet':
@@ -178,6 +178,7 @@ goal_errors = []
 test_errors = []
 train_errors = []
 train_losses = []
+best = []
 
 for i in range(rep):
     start_rep_time = time.time()
@@ -193,7 +194,6 @@ for i in range(rep):
     train_input, train_target, train_classes, \
     test_input, test_target, test_classes = generate_data(args.datasize, normalize = True)
 
-
     ## Model Training
     print("** Starting training... **")
     success = model.train_(   train_input, train_classes, test_input, test_classes, test_target, \
@@ -206,6 +206,7 @@ for i in range(rep):
         test_errors.append(model.test_error)
         train_errors.append(model.train_error)
         train_losses.append(model.sumloss)
+        best.append(model.best_score)
 
         print("** Training time : {:.0f} minutes {:.0f} seconds\n".format((time.time()-start_rep_time)//60, int(time.time()-start_rep_time)%60))
     else:
@@ -214,10 +215,10 @@ for i in range(rep):
 
 ## Ploting results
 #DEFAULT
-plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis)
+#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, best = best)
 #RESNET
-#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Resnet-{} channels-{} residual-{} kernelsize".format(nb_channels, nb_residual_blocks, kernel_size))
+plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Resnet-{} channels-{} residual-{} kernelsize".format(nb_channels, nb_residual_blocks, kernel_size), best = best)
 #LENET
-#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Lenet-Kernelsize {}-BatchNorm {}-Dropout {}-Aux loss {}".format(kernel_size, args.bn, args.dropout, args.auxloss))
+#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Lenet-Kernelsize {}-BatchNorm {}-Dropout {}-Aux loss {}".format(kernel_size, args.bn, args.dropout, args.auxloss), best = best)
 #LINEAR
-#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Linear-{} linear_layers-{} nodes-Dropout {}".format(nb_linear_layers, nb_nodes, args.dropout))
+#plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Linear-{} linear_layers-{} nodes-Dropout {}".format(nb_linear_layers, nb_nodes, args.dropout), best=best)
