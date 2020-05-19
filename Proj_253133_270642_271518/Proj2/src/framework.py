@@ -201,7 +201,8 @@ class CrossEntropyLoss(Loss):
                 "Input for CrossEntropyLoss must be composed of exactly two arguments, supplementary arguments are ignored.")
         input_ = input[0]
         target_ = input[1]
-        proba =  softmax(input_)
+        exps = torch.exp(input_)
+        proba = exps / torch.sum(exps, dim=1, keepdim=True)
         log_likelihood = -torch.log(proba[range(target_.size(0)), target_])
         crossentropy_loss = torch.mean(log_likelihood)
 
@@ -265,12 +266,3 @@ class Sequential(Module):
             out += '    ({}) '.format(i) + layer.__repr__() + '\n'
         out += ')'
         return out
-
-
-
-# UTILITY FUNCTION
-
-def softmax(input_):
-    exps = torch.exp(input_)
-    proba = exps / torch.sum(exps, dim=1, keepdim=True)
-    return proba
