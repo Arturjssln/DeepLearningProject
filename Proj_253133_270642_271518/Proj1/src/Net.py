@@ -52,12 +52,13 @@ class Net(nn.Module):
 
         # ResNet architecture
         elif architecture == 'resnet':
+            self.do = nn.Dropout()  # RATE TO DEFINE (default=0.5)
             self.batch_normalization = batch_normalization
             self.conv = nn.Conv2d(1, nb_channels, kernel_size = kernel_size, padding = (kernel_size - 1) // 2)
             if batch_normalization:
                 self.bn = nn.BatchNorm2d(nb_channels)
             self.resnet_blocks = nn.Sequential(
-                *(ResNetBlock(nb_channels, kernel_size, skip_connections, batch_normalization) for _ in range(nb_residual_blocks))
+                *(ResNetBlock(nb_channels, kernel_size, skip_connections, batch_normalization, self.dropout) for _ in range(nb_residual_blocks))
             )
             self.fc = nn.Linear(nb_channels, nb_classes)
 
@@ -163,7 +164,10 @@ class Net(nn.Module):
         elif self.architecture == 'resnet':
             batch_size = x.size(0)
             if self.batch_normalization:
-                x = F.relu(self.bn(self.conv(x)))
+                if self.dropout:
+                    x = F.relu(self.bn(self.do(self.conv(x))))
+                else:
+                    x = F.relu(self.bn(self.conv(x)))
             else:
                 x = F.relu(self.conv(x))
             x = self.resnet_blocks(x)
@@ -352,14 +356,15 @@ class Net(nn.Module):
 
 
 class ResNetBlock(nn.Module):
-    def __init__(self, nb_channels, kernel_size, skip_connections, batch_normalization):
+    def __init__(self, nb_channels, kernel_size, skip_connections, batch_normalization, dropout):
         '''
         Initialization of a unit block of ResNet
         '''
         super(ResNetBlock, self).__init__()
         self.skip_connections = skip_connections
         self.batch_normalization = batch_normalization
-
+        self.dropout = dropout
+        self.do = nn.Dropout()
         self.conv1 = nn.Conv2d(nb_channels, nb_channels,
                                kernel_size = kernel_size,
                                padding = (kernel_size - 1) // 2)
@@ -379,14 +384,17 @@ class ResNetBlock(nn.Module):
         y = self.conv1(x)
         if self.batch_normalization:
             y = self.bn1(y)
+        if self.dropout:
+            y = self.do(y)
         y = F.relu(y)
         y = self.conv2(y)
         if self.batch_normalization:
             y = self.bn2(y)
+        if self.dropout:
+            y = self.do(y)
         if not self.skip_connections:
             y = y + x
         y = F.relu(y)
-
         return y
 
 

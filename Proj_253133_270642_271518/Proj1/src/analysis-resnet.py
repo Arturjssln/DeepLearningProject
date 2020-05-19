@@ -9,6 +9,7 @@ KERNEL_SIZE_RANGE = [3, 5, 7]
 
 RESIDUAL = True
 BN = True
+DROPOUT = False
 
 FNULL = open(os.devnull, 'w')
 
@@ -24,6 +25,8 @@ for i in NB_RESIDUAL_BLOCKS_RANGE:
                 params += ' --bn'
             if RESIDUAL :
                 params += ' --residual'
+            if DROPOUT:
+                params += ' --dropout'
             print(params)
             subprocess.call('{0} dev.py {1}'.format(sys.executable, params), shell=True, stdout=FNULL)
             print('** Evaluation #{} Done ({:.1f}% overall)'.format(eval_, eval_*100/nb_eval))
