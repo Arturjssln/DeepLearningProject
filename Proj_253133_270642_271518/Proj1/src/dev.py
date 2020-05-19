@@ -2,7 +2,7 @@
 import torch
 from torch import nn
 from utils import generate_data, plot_results, count_parameters
-from Net import Net
+from net import Net
 import time
 import argparse
 
