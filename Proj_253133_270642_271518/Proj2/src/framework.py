@@ -106,6 +106,15 @@ class Module(object):
         if issubclass(type(value), Module):
             self._parameters[name] = value
 
+    def save(self, path = './', name = 'parameters'):
+        torch.save(self._parameters, path + name + '.pt')
+
+    def load(self, path = './parameters.pt'):
+        parameters = torch.load(path)
+        for key in parameters:
+            self.__setattr__(key, parameters[key])
+
+
 
 class ReLU(Module):
     """

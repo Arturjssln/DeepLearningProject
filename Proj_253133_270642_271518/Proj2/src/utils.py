@@ -63,4 +63,3 @@ def plot_prediction(input, target, model):
                mode="expand", borderaxespad=0, ncol=3)
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.show()
