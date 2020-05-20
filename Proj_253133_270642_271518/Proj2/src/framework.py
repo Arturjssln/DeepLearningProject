@@ -185,7 +185,7 @@ class Layer(Module):
         """
         Initializes the params.
         """
-        pass
+        raise NotImplementedError
 
     def reset_grad(self):
         for key in self.params:
