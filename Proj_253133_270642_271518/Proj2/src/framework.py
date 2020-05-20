@@ -1,7 +1,8 @@
-import torch 
+import torch
 import math
 from collections import OrderedDict
-import warnings 
+import warnings
+from itertools import product
 
 
 class Parameter(object):
@@ -221,9 +222,8 @@ class Linear(Layer):
             warnings.warn(
                 "Input for Linear must be composed of only one element, supplementary arguments are ignored.")
         self._store['x']  = input[0]
-        output = torch.mm(self._store['x'], self.params['W'].p) + self.params['b'].p
-        self._store['output'] = output
-        return output
+        out = torch.mm(self._store['x'], self.params['W'].p) + self.params['b'].p
+        return out
 
     def local_grad(self):
         dx_local = self.params['W'].p
@@ -351,3 +351,119 @@ class Sequential(Module):
             out += '    ({}) '.format(i) + layer.__repr__() + '\n'
         out += ')'
         return out
+
+
+class Conv2D(Layer):
+    def __init__(self, channel_in, channel_out, kernel_size=3, stride=1, padding=0):
+        super(Conv2D, self).__init__()
+        self.channel_in = channel_in
+        self.channel_out = channel_out
+        self.stride = stride
+        self.kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
+        self.padding = padding
+        self._init_params(channel_in, channel_out, self.kernel_size)
+
+    def _init_params(self, channel_in, channel_out, kernel_size):
+        scale = 2/math.sqrt(channel_in*kernel_size[0]*kernel_size[1])
+        self.params['W'] = Parameter(torch.empty(size=(channel_out, channel_in, *kernel_size)).normal_(std=scale))
+        self.params['b'] = Parameter(torch.zeros(channel_out, 1))
+
+    def forward(self, *input):
+        if len(input) > 1:
+            warnings.warn(
+                "Input for Conv2D must be composed of only one element, supplementary arguments are ignored.")
+        self._store['x'] = input[0]
+        if self.padding:
+            self._store['x'] = zero_padding(self._store['x'], width=self.padding, dimensions=(2, 3))
+
+        # initialize input shape and output shape
+        N, C_in, H_in, W_in = tuple(self._store['x'].size())
+        KH, KW = self.kernel_size
+        C_out, H_out, W_out = (self.channel_out, 1 + (H - KH)//self.stride, 1 + (W - KW)//self.stride)
+        out = torch.zeros((N, C_out, H_out, W_out))
+        for n in range(N):
+            for channel in range(C_out):
+                for h, w in product(range(H_out), range(W_out)):
+                    h_offset, w_offset = h*self.stride, w*self.stride
+                    local_patch = self._store['x'][n, :, h_offset:h_offset+KH, w_offset:w_offset+KW]
+                    out[n, channel, h, w] = torch.sum(self.params['W'][channel] * local_patch) + self.params['b'][channel]
+        return out
+
+    def backward(self, *gradwrtoutput):
+        x = self._store['x']
+        dx = torch.zeros_like(x)
+        dout = gradwrtoutput[0]
+        N, C, H, W = dx.shape
+        KH, KW = self.kernel_size
+        for n in range(N):
+            for c_out in range(self.channel_out):
+                for h, w in product(range(dout.size(2)), range(dout.size(3))):
+                    h_offset, w_offset = h * self.stride, w * self.stride
+                    dx[n, :, h_offset:h_offset+KH, w_offset:w_offset+KW] += self.params['W'][c_out] * dout[n, c_out, h, w]
+
+        dw = torch.zeros_like(self.params['W'])
+        for c_out in range(self.channel_out):
+            for c_in in range(self.channel_in):
+                for h, w in product(range(KH), range(KW)):
+                    x_local_patch = x[:, c_in, h:H-KH+h+1:self.stride, w:W-KW+w+1:self.stride]
+                    dout_local_patch = dout[:, c_out]
+                    dw[c_out, c_in, h, w] = torch.sum(x_local_patch*dout_local_patch)
+
+        db = torch.sum(dout, dim=(0, 2, 3)).reshape(self.channel_out, 1)
+
+        self.params['W'].grad += dw
+        self.params['b'].grad += db
+        return dx[:, :, self.padding:-self.padding, self.padding:-self.padding]
+
+
+class MaxPool2D(Module):
+    def __init__(self, kernel_size=(2, 2)):
+        super(MaxPool2D, self).__init__()
+        self.kernel_size = (kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size
+
+    def forward(self, x):
+        N, C, H, W = tuple(x.size())
+        KH, KW = self.kernel_size
+
+        grad = torch.zeros_like(x)
+        out = torch.zeros((N, C, H//KH, W//KW))
+
+        # for n in range(N):
+        for h, w in product(range(0, H//KH), range(0, W//KW)):
+            h_offset, w_offset = h*KH, w*KW
+            local_patch = x[:, :, h_offset:h_offset+KH, w_offset:w_offset+KW]
+            out[:, :, h, w] = torch.max(local_patch, axis=(2, 3))
+
+        self._store['x'] = x
+        self._store['out'] = out
+        return out
+    
+    def local_grad(self):
+        N, C, H, W = tuple(x.size())
+        KH, KW = self.kernel_size
+        x = self._store['x']
+        out = self._store['out']
+        grad = torch.zeros_like(x)
+        for h, w in product(range(0, H//KH), range(0, W//KW)):
+            h_offset, w_offset = h*KH, w*KW
+            for kh, kw in product(range(KH), range(KW)):
+                grad[:, :, h_offset+kh, w_offset+kw] = (x[:, :, h_offset+kh, w_offset+kw] >= out[:, :, h, w])
+        return {'x': grad}
+
+    def backward(self, *gradwrtoutput):
+        dout = gradwrtoutput[0]
+        dout = torch.repeat_interleave(torch.repeat_interleave(dout, repeats=self.kernel_size[0], dim=2), repeats=self.kernel_size[1], dim=3)
+        return self._grad['x'] * dout
+
+
+
+#### UTILITY FUNCTION ####
+def zero_padding(x, width, dimensions):
+    width = (0 if i not in dimensions else width for i in range(x.ndim)) if isinstance(width, int) else width
+    size = (x.size(i) + 2*w for i, w in enumerate(width))
+    x_pad = torch.zeros(size)
+
+    idx = [slice(width[dim], x_pad.size(dim) - width[dim])
+           for dim in range(x.ndim)]
+    x_pad[idx] = x
+    return x_pad

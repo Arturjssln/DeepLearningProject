@@ -24,7 +24,7 @@ else:
 DATASET_SIZE = 1000
 
 ## Generate dataset
-train_input, train_target, test_input, test_target = generate_data(DATASET_SIZE, one_hot=one_hot)
+train_input, train_target, test_input, test_target = generate_data(DATASET_SIZE, one_hot=one_hot, normalize=True)
 
 ## Create model
 model = Net(nb_nodes = 25)
