@@ -107,9 +107,15 @@ class Module(object):
             self._parameters[name] = value
 
     def save(self, path = './', name = 'parameters'):
+        """
+        Save parameters of a model
+        """
         torch.save(self._parameters, path + name + '.pt')
 
     def load(self, path = './parameters.pt'):
+        """
+        Load parameters of a pretrained model
+        """
         parameters = torch.load(path)
         for key in parameters:
             self.__setattr__(key, parameters[key])
