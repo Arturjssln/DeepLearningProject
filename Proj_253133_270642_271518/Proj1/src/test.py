@@ -11,23 +11,19 @@ parser = argparse.ArgumentParser(description='Project 1 - Classification.')
 
 parser.add_argument('--datasize',
                     type=int, default=1000,
-                    help='Number of pairs used for training and for testing (default: 1000)')
+                    help='Number of pairs used for training and for testing; default: 1000')
 
 parser.add_argument('--architecture',
-                    type=str, default='lenet',
-                    help='Architecture of Neural Network to use (can be ????; default: ????)')
-
-parser.add_argument('--loss',
-                    type=str, default=None,
-                    help='Loss used to train Neural Network (can be MSE, ????; default: crossentropy)')
+                    type=str, default='resnet',
+                    help='Architecture of Neural Network to use (can be linear, lenet, resnet, alexnet; default: resnet)')
 
 parser.add_argument('--residual',
                     action='store_true', default=False,
-                    help='Use residual Neural Network (default: False)')
+                    help='Use residual Neural Network')
 
 parser.add_argument('--bn',
                     action='store_true', default=False,
-                    help='Use batch normalization (default: False)')
+                    help='Use batch normalization')
 
 parser.add_argument('--nodes',
                     type=int, default=32,
@@ -37,56 +33,33 @@ parser.add_argument('--epoch',
                     type=int, default=25,
                     help='Number of epoch (default: 25)')
 
-parser.add_argument('--deep',
-                    action='store_true', default=False,
-                    help='Use deep Neural Network (ignored if architecture is not linear; default: False)')
-
 parser.add_argument('--optimizer',
                     type=str, default=None,
                     help='Define optimizer to use (can be MSE, Adam; default: None)')
 
 parser.add_argument('--dropout',
                     action='store_true', default=False,
-                    help='Use dropout (default: False)')
-
-parser.add_argument('--save_fig',
-                    action='store_true', default=False,
-                    help='Save figure to png')
+                    help='Use dropout')
 
 parser.add_argument('--nb_residual_blocks',
-                    type=int, default=1,  # To Define
-                    help='If Resnet selected - change number of residual blocks (default is 1)')
+                    type=int, default=2,
+                    help='If Resnet selected - change number of residual blocks (default is 2)')
 
 parser.add_argument('--nb_channels',
-                    type=int, default=6,  # To Define
-                    help='If Resnet selected - change number of channels (default is 6)')
+                    type=int, default=16,
+                    help='If Resnet selected - change number of channels (default is 16)')
 
 parser.add_argument('--kernel_size',
-                    type=int, default=3,  # To Define
-                    help='If Resnet selected - change kernel size (default is 3)')
-
-parser.add_argument('--force_axis',
-                    action='store_true', default=False,
-                    help='Used for plotting, if selected, axis is not automatically scalled (default is false)')
+                    type=int, default=7,
+                    help='If Resnet selected - change kernel size (default is 7)')
 
 parser.add_argument('--auxloss',
                     action='store_true', default=False,
-                    help='Use auxiliary loss (default is false)')
+                    help='Use auxiliary loss')
 
 
 args = parser.parse_args()
 
-
-## Determine loss used
-if args.loss is None or args.loss == 'crossentropy':
-    # Default loss
-    loss = nn.CrossEntropyLoss()
-elif args.loss == 'MSE':
-    # MSE loss
-    loss = nn.MSELoss()
-    raise NotImplementedError
-else:
-    raise ValueError
 
 
 print("** Model chosen: **")
@@ -97,9 +70,9 @@ nb_channels = None
 kernel_size = None
 nb_linear_layers = None
 nb_nodes = None
+loss=nn.CrossEntropyLoss()
 
 # Number of repetition
-
 rep = 20
 
 # Learning rate
@@ -109,10 +82,7 @@ nb_classes = 10
 if args.architecture == 'linear':
     nb_nodes = args.nodes
     args.auxloss = False
-    if args.deep:
-        nb_linear_layers = 5
-    else:
-        nb_linear_layers = 3
+    nb_linear_layers = 3
 
     print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 
@@ -124,11 +94,9 @@ elif args.architecture == 'resnet':
 
     ## Kernel size must be greater than 2
     if kernel_size < 3:
-        print("*  WARNING KERNEL SIZE MUST BE GREATER THAN 2, CHANGED KERNEL SIZE TO 3")
         kernel_size = 3
-
-    optimizer = 'SGD'
-    print("*  Resnet architecture neural network with {} residual block with {} channels and a kernel size of {}.".format(
+    args.optimizer = 'SGD'
+    print("*  Resnet architecture neural network with {} residual block(s) with {} channel(s) and a kernel size of {}.".format(
         nb_residual_blocks, nb_channels, kernel_size))
 
 elif args.architecture == 'lenet':
@@ -147,8 +115,7 @@ elif args.architecture == 'xception':
     print("*  Xception neural network.")
 
 else:
-    args.architecture = None
-    print("*  Default neural network architecture chosen.")
+    raise ValueError('Unkwown architecture')
 
 
 skip_connections = args.residual
@@ -190,11 +157,12 @@ train_input, train_target, train_classes, \
 
 ## Model Training
 print("** Starting training... **")
-success = model.train_(train_input, train_classes, test_input, test_classes, test_target,
+torch.manual_seed(0)
+SUCCESS = model.train_(train_input, train_classes, test_input, test_classes, test_target,
                         epoch=args.epoch, eta=eta, criterion=loss)
 
 ## Results saving
-if success:
+if SUCCESS:
     print("** Training done in : {:.0f} minutes {:.0f} seconds\n".format(
         (time.time()-start_rep_time)//60, int(time.time()-start_rep_time) % 60))
 else:

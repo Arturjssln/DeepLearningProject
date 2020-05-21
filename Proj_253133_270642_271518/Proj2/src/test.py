@@ -11,6 +11,9 @@ parser = argparse.ArgumentParser(description='Project 2 - NN Framework.')
 parser.add_argument('--loss',
                     type=str, default='MSE',
                     help='Loss to use (available: CrossEntropy, MSE; default: MSE)')
+parser.add_argument('--notrain',
+                    action='store_true', default=False,
+                    help='Don\'t train the neural network')
 args = parser.parse_args()
 if args.loss == 'MSE':
     ONE_HOT = True
@@ -29,17 +32,19 @@ train_input, train_target, test_input, test_target = generate_data(DATASET_SIZE,
 ## Create model
 model = Net(nb_nodes = 25)
 print(model)
-print('Using : {}Loss\n'.format(args.loss))
-## Training model
-model.train_(train_input, train_target, test_input, test_target, epoch=100, eta=1e-1, criterion=loss)
-## Ploting results of model at the end of training
-plot_results(model.sumloss, model.train_error, model.test_error)
-plot_prediction(test_input, test_target, model)
-plt.suptitle('Prediction of the model at the end of training')
-
-## Load best model
-model.load('../model/best-model.pt')
-## Ploting results of best model
-plot_prediction(test_input, test_target, model)
-plt.suptitle('Prediction of the best model')
-plt.show()
+if args.notrain:
+    ## Load best model
+    model.load('../model/best-model.pt')
+    ## Ploting results of best model
+    plot_prediction(test_input, test_target, model)
+    plt.suptitle('Prediction of the best model')
+    plt.show()
+else:
+    print('Using : {}Loss\n'.format(args.loss))
+    ## Training model
+    model.train_(train_input, train_target, test_input, test_target, epoch=100, eta=1e-1, criterion=loss)
+    ## Ploting results of model at the end of training
+    plot_results(model.sumloss, model.train_error, model.test_error)
+    plot_prediction(test_input, test_target, model)
+    plt.suptitle('Prediction of the trained model')
+    plt.show()

@@ -10,16 +10,16 @@ torch.set_grad_enabled(False)
 parser = argparse.ArgumentParser(description='Project 2 - NN Framework.')
 parser.add_argument('--train',
                     action='store_true', default=False,
-                    help='Train the neural network (default: False)')
+                    help='Train the neural network')
 args = parser.parse_args()
 
 ONE_HOT = False
 loss = ff.CrossEntropyLoss()
 
-DATASET_SIZE = 1000
+DATASET_SIZE = 100
 
 ## Generate dataset
-train_input, train_target, test_input, test_target = load_data(nb_data=100, one_hot_labels=ONE_HOT, normalize=True)
+train_input, train_target, test_input, test_target = load_data(nb_data=DATASET_SIZE, one_hot_labels=ONE_HOT, normalize=True)
 
 ## Create model
 model = Net()
@@ -27,7 +27,8 @@ print(model)
 if args.train:
     print('Using Cross Entropy Loss\n')
     ## Training model
-    model.train_(train_input, train_target, test_input, test_target, epoch=20, eta=1e-1, criterion=loss)
+    torch.manual_seed(3)
+    model.train_(train_input, train_target, test_input, test_target, epoch=5, eta=1e-1, criterion=loss)
     ## Ploting results of model at the end of training
     plot_results(model.sumloss, model.train_error, model.test_error)
     plot_prediction_mnist(test_input, test_target, model)

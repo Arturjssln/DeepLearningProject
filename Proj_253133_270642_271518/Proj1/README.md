@@ -1,26 +1,42 @@
 # Project 1 – Classification, weight sharing, auxiliary losses
 
 ## Requirements
-Pytorch
+torch  
+torchvision  
 
-## Run
-First install required dependencies:
+For Linux and Windows, run the following command:
+```
+conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
+```
+For MacOS, run the following command:
+```
+conda install pytorch torchvision -c pytorch
+```
 
-`pip install -r requirements.txt`
+## Usage
+To run our linear model, run the following command from the src directory:
+```bash
+python test.py
 
-Then, run using :
-
-`python test.py`
-
-### Options for running
-- --datasize : Number of pairs used for training and for testing  
-Value : Positive integer  
-Default : 1000  
-- --architecture : Architecture of Neural Network to use  
-Value : ????  
-Default : ????  
-- --loss : Loss used to train Neural Network  
-Value : ????  
-Default : "MSE"  
-- --residual : Use residual Neural Network  
-- --bn : Use batch normalization  
+Options:
+    --datasize INT              Size of dataset (same for train and test)
+                                (defaut: 1000)
+    --architecture STR          Choice of architecture
+                                    (Possibility: 'linear', 'lenet', 'resnet', 'alexnet'; default: 'resnet')
+    --nodes INT                 Number of nodes 
+                                    (ignored if architecture is not 'linear'; default: 32)
+    --epoch INT                 Number of epoch 
+                                    (default: 25)
+    --optimizer OPTI            Define optimizer to use
+                                    (Possibility: 'MSE' or 'Adam'; default: None)
+    --nb_residual_blocks INT    Set number of residual blocks
+                                    (ignored if architecture is not 'resnet'; default: 2)
+    --nb_channels INT           Set number of channels
+                                    (ignored if architecture is not 'resnet'; default: 16)
+    --kernel_size INT           Set kernel size
+                                    (ignored if architecture is not 'resnet'; default: 7)
+    --residual                  Use residual Neural Network
+    --bn                        Use batch normalization
+    --dropout                   Use dropout
+    --auxloss                   Use auxiliary loss
+```
