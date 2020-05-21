@@ -100,8 +100,8 @@ def plot_prediction_mnist(input, target, model):
     classes = torch.unique(target)
     _, predicted_classes = prediction.max(dim=1)
     
-    fig, axes = plt.subplots(1, 10, figsize=(12, 3))
-    for ax, im, lb in zip(axes,input[:10], predicted_classes[:10]):
+    fig, axes = plt.subplots(2, 10, figsize=(12, 3))
+    for ax, im, lb in zip(axes.ravel(), input[:20], predicted_classes[:20]):
         ax.imshow(im.view(28,28), cmap='gray')
         ax.axis('off')
-        ax.set_title(lb)
+        ax.set_title(lb.item())
