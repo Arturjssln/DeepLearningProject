@@ -46,7 +46,7 @@ class Net(nn.Module):
                 modules.append(nn.Linear(nb_nodes, nb_nodes))
                 modules.append(nn.ReLU())
                 if(self.dropout):
-                    modules.append(nn.Dropout()) # RATE TO DEFINE
+                    modules.append(nn.Dropout()) 
             modules.append(nn.Linear(nb_nodes, nb_classes))
             self.layers = nn.Sequential(*modules)
 

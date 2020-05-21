@@ -28,14 +28,14 @@ def convert_to_one_hot_labels(input, target):
     tmp.scatter_(1, target.view(-1, 1), 1.0)
     return tmp
 
-def load_data(flatten = False, one_hot_labels = False, normalize = False):
+def load_data(nb_data = 1000, flatten = False, one_hot_labels = False, normalize = False):
     mnist_train_set = datasets.MNIST(data_dir + '/mnist/', train=True, download=True)
     mnist_test_set = datasets.MNIST(data_dir + '/mnist/', train=False, download=True)
 
-    train_input = mnist_train_set.data.view(-1, 1, 28, 28).float()
-    train_target = mnist_train_set.targets
-    test_input = mnist_test_set.data.view(-1, 1, 28, 28).float()
-    test_target = mnist_test_set.targets
+    train_input = mnist_train_set.data.view(-1, 1, 28, 28).float()[:nb_data]
+    train_target = mnist_train_set.targets[:nb_data]
+    test_input = mnist_test_set.data.view(-1, 1, 28, 28).float()[:nb_data]
+    test_target = mnist_test_set.targets[:nb_data]
 
     if flatten:
         train_input = train_input.clone().reshape(train_input.size(0), -1)

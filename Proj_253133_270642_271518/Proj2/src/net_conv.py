@@ -2,30 +2,32 @@ import torch
 import framework as ff
 
 class Net(ff.Module):
-    def __init__(self, nb_nodes, act_fct = ff.ReLU()):
+    def __init__(self, kernel_size = 5, nb_classes = 10):
         super(Net, self).__init__()
         self.best_epoch = 0
         self.sumloss = []
         self.train_error = []
         self.test_error = []
 
-        self.linear_layers = ff.Sequential(ff.Linear(2, nb_nodes), act_fct, \
-                                            ff.Linear(nb_nodes, nb_nodes), act_fct, \
-                                            ff.Linear(nb_nodes, nb_nodes), act_fct, \
-                                            ff.Linear(nb_nodes, 2))
+        self.c1 = ff.Sequential(ff.Conv2d(1, 6, kernel_size=kernel_size, padding=2), ff.ReLU(), ff.Conv2d(6, 1, kernel_size=kernel_size), ff.ReLU())
+        self.fc = ff.Sequential(ff.Linear(576, 84), ff.ReLU(), ff.Linear(84, nb_classes))
 
     def forward(self, x):
-        return self.linear_layers(x)
+        batch_size = x.size(0)
+        x = self.c1(x)
+        x = self.fc(x.view(batch_size, -1))
+        return x
 
     def backward(self, criterion):
         d = criterion.backward()
-        d = self.linear_layers.backward(d)
+        d = self.fc.backward(d)
+        d = self.c1.backward(d.view(-1, 1, 24, 24))
         return d
 
     def train_(self, \
                 train_input, train_target, \
                 test_input = None, test_target = None, \
-                batch_size = 100, epoch = 50, \
+                batch_size = 5, epoch = 50, \
                 eta = 1e-1, criterion = ff.MSELoss(), print_skip = 5):
         """
         Training method

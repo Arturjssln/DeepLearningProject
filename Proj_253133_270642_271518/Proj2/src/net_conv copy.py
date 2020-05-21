@@ -2,30 +2,43 @@ import torch
 import framework as ff
 
 class Net(ff.Module):
-    def __init__(self, nb_nodes, act_fct = ff.ReLU()):
+    def __init__(self, kernel_size = 5, nb_classes = 10):
         super(Net, self).__init__()
         self.best_epoch = 0
         self.sumloss = []
         self.train_error = []
         self.test_error = []
 
-        self.linear_layers = ff.Sequential(ff.Linear(2, nb_nodes), act_fct, \
-                                            ff.Linear(nb_nodes, nb_nodes), act_fct, \
-                                            ff.Linear(nb_nodes, nb_nodes), act_fct, \
-                                            ff.Linear(nb_nodes, 2))
+        if kernel_size == 3:
+            self.c1 = ff.Sequential(ff.Conv2d(1, 6, kernel_size=kernel_size, padding=2), ff.BatchNorm2d(6), ff.ReLU(), ff.MaxPool2d(kernel_size=2), ff.Dropout())
+        elif kernel_size == 5:
+            self.c1 = ff.Sequential(ff.Conv2d(1, 6, kernel_size=kernel_size, padding=2), ff.BatchNorm2d(6), ff.ReLU(), ff.MaxPool2d(kernel_size=2), ff.Dropout())
+        else:
+            raise NameError("Kernel size not valid (Can be 3 or 5)")
+        self.c2 = ff.Sequential(ff.Conv2d(6, 16, kernel_size=kernel_size), ff.BatchNorm2d(16), ff.ReLU(), ff.MaxPool2d(kernel_size=2), ff.Dropout())
+        self.c3 = ff.Sequential(ff.Conv2d(16, 120, kernel_size=kernel_size), ff.BatchNorm2d(120), ff.ReLU(), ff.Dropout())
+        self.fc = ff.Sequential(ff.Linear(120, 84), ff.ReLU(), ff.Linear(84, nb_classes))
 
     def forward(self, x):
-        return self.linear_layers(x)
+        batch_size = x.size(0)
+        x = self.c1(x)
+        x = self.c2(x)
+        x = self.c3(x)
+        x = self.fc(x.view(batch_size, -1))
+        return x
 
     def backward(self, criterion):
         d = criterion.backward()
-        d = self.linear_layers.backward(d)
+        d = self.fc.backward(d)
+        d = self.c3.backward(d)
+        d = self.c2.backward(d)
+        d = self.c1.backward(d)
         return d
 
     def train_(self, \
                 train_input, train_target, \
                 test_input = None, test_target = None, \
-                batch_size = 100, epoch = 50, \
+                batch_size = 5, epoch = 50, \
                 eta = 1e-1, criterion = ff.MSELoss(), print_skip = 5):
         """
         Training method
@@ -34,6 +47,7 @@ class Net(ff.Module):
             sum_loss = 0
             # We do this with mini-batches
             for b in range(0, train_input.size(0), batch_size):
+                print(b)
                 # Forward + save local grad for each layer
                 output = self(train_input.narrow(0, b, batch_size))
                 # Forward + save local grad of loss layer

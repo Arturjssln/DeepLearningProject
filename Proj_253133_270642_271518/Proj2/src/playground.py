@@ -1,6 +1,6 @@
 import torch
 from utils import load_data, plot_results, plot_prediction
-from net import Net
+from net_conv import Net
 import framework as ff
 import argparse
 import matplotlib.pyplot as plt
@@ -24,16 +24,14 @@ else:
 DATASET_SIZE = 1000
 
 ## Generate dataset
-train_input, train_target, test_input, test_target = \
-    load_data(DATASET_SIZE, one_hot_labels=ONE_HOT, normalize=True)
-
+train_input, train_target, test_input, test_target = load_data(nb_data=100, one_hot_labels=ONE_HOT, normalize=True)
+print(train_input.shape, train_target.shape)
 ## Create model
 model = Net()
 print(model)
 print('Using : {}Loss\n'.format(args.loss))
 ## Training model
-model.train_(train_input, train_target, test_input,
-            test_target, epoch=100, eta=1e-1, criterion=loss)
+model.train_(train_input, train_target, test_input, test_target, epoch=10, eta=1e-1, criterion=loss)
 ## Ploting results of model at the end of training
 plot_results(model.sumloss, model.train_error, model.test_error)
 plot_prediction(test_input, test_target, model)
