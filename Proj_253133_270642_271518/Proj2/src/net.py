@@ -60,7 +60,7 @@ class Net(ff.Module):
             #Save best epoch
             if self.test_error[self.best_epoch] > self.test_error[-1]:
                 self.best_epoch = e
-                self.save()
+                self.save('../model/best-model.pt')
 
         print("** BEST SCORE --> Epoch #{:2d}: \n*  train_error: {:.02f}%, \n*  test_error: {:.02f}%"\
             .format(self.best_epoch, self.train_error[self.best_epoch]*100, self.test_error[self.best_epoch]*100))
@@ -69,6 +69,7 @@ class Net(ff.Module):
         '''
         Computing error rate givin an input and its target
         '''
+        self.eval()
         error = 0.0
         for b in range(0, target.size(0), batch_size):
             prediction = self(input.narrow(0, b, batch_size))
@@ -79,4 +80,5 @@ class Net(ff.Module):
                 if pred.item() != t_class:
                     error += 1
         error /= target.size(0)
+        self.train()
         return error

@@ -117,7 +117,7 @@ class Module(object):
         """
         Store Module subclasses attribute
         """
-        super(Module, self).__setattr__(name, value)
+        super().__setattr__(name, value)
         # If attribut is a Module, add it to the parameters
         if issubclass(type(value), Module):
             self._parameters[name] = value
@@ -370,19 +370,19 @@ class Sequential(Module):
 
 
 class Conv2d(Layer):
-    def __init__(self, channel_in, channel_out, kernel_size=3, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
         super(Conv2d, self).__init__()
-        self.channel_in = channel_in
-        self.channel_out = channel_out
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
         self.stride = stride
         self.padding = padding
         self._init_params()
 
     def _init_params(self):
-        scale = 2/math.sqrt(self.channel_in*self.kernel_size[0]*self.kernel_size[1])
-        self._params['W'] = Parameter(torch.empty(size=(self.channel_out, self.channel_in, *self.kernel_size)).normal_(std=scale))
-        self._params['b'] = Parameter(torch.zeros(self.channel_out, 1))
+        scale = 2/math.sqrt(self.in_channels*self.kernel_size[0]*self.kernel_size[1])
+        self._params['W'] = Parameter(torch.empty(size=(self.out_channels, self.in_channels, *self.kernel_size)).normal_(std=scale))
+        self._params['b'] = Parameter(torch.zeros(self.out_channels, 1))
 
     def forward(self, *input):
         if len(input) > 1:
@@ -394,7 +394,7 @@ class Conv2d(Layer):
         # initialize input shape and output shape
         N, _, H_IN, W_IN = tuple(x.size())
         KH, KW = self.kernel_size
-        C_OUT, H_OUT, W_OUT = (self.channel_out, 1 + (H_IN - KH)//self.stride, 1 + (W_IN - KW)//self.stride)
+        C_OUT, H_OUT, W_OUT = (self.out_channels, 1 + (H_IN - KH)//self.stride, 1 + (W_IN - KW)//self.stride)
         out = torch.zeros((N, C_OUT, H_OUT, W_OUT))
         for n in range(N):
             for channel in range(C_OUT):
@@ -413,20 +413,20 @@ class Conv2d(Layer):
         N, _, H, W = tuple(dx.size())
         KH, KW = self.kernel_size
         for n in range(N):
-            for c_out in range(self.channel_out):
+            for c_out in range(self.out_channels):
                 for h, w in product(range(dout.size(2)), range(dout.size(3))):
                     h_offset, w_offset = h * self.stride, w * self.stride
                     dx[n, :, h_offset:h_offset+KH, w_offset:w_offset+KW] += self._params['W'].p[c_out] * dout[n, c_out, h, w]
 
         dw = torch.zeros_like(self._params['W'].p)
-        for c_out in range(self.channel_out):
-            for c_in in range(self.channel_in):
+        for c_out in range(self.out_channels):
+            for c_in in range(self.in_channels):
                 for h, w in product(range(KH), range(KW)):
                     x_local_patch = x[:, c_in, h:H-KH+h+1:self.stride, w:W-KW+w+1:self.stride]
                     dout_local_patch = dout[:, c_out]
                     dw[c_out, c_in, h, w] = torch.sum(x_local_patch*dout_local_patch)
 
-        db = torch.sum(dout, dim=(0, 2, 3)).reshape(self.channel_out, 1)
+        db = torch.sum(dout, dim=(0, 2, 3)).reshape(self.out_channels, 1)
 
         self._params['W'].grad += dw
         self._params['b'].grad += db
@@ -436,8 +436,8 @@ class Conv2d(Layer):
         return dx[:, :, self.padding:-self.padding, self.padding:-self.padding]
 
     def __repr__(self):
-        return "Conv2d(channel_in:{}, channel_out:{}, kernel_size:{}, stride:{}, padding:{})".format(
-            self.channel_in, self.channel_out, self.kernel_size, self.stride, self.padding)
+        return "Conv2d(in_channels: {}, out_channels: {}, kernel_size: {}, stride: {}, padding: {})".format(
+            self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
 
 
 class MaxPool2d(Layer):
@@ -482,7 +482,7 @@ class MaxPool2d(Layer):
         return self._grad['x'] * dout
     
     def __repr__(self):
-        return "MaxPool2d(kernel_size:{})".format(self.kernel_size)
+        return "MaxPool2d(kernel_size: {})".format(self.kernel_size)
 
 
 class BatchNorm2d(Layer):
@@ -528,7 +528,7 @@ class BatchNorm2d(Layer):
         return dx
     
     def __repr__(self):
-        return "BatchNorm2d(num_features:{}, epsilon:{})".format(self.num_features, self.eps)
+        return "BatchNorm2d(num_features: {}, epsilon: {})".format(self.num_features, self.eps)
 
 
 class Dropout(Layer):
@@ -567,7 +567,7 @@ class Dropout(Layer):
         return self._grad['x'] * dout
     
     def __repr__(self):
-        return "Dropout(p:{}, inplace:{})".format(self.p, self.inplace)
+        return "Dropout(p: {}, inplace: {})".format(self.p, self.inplace)
 
 
 #### UTILITY FUNCTION ####

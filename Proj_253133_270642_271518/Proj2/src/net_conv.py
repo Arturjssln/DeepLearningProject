@@ -9,8 +9,8 @@ class Net(ff.Module):
         self.train_error = []
         self.test_error = []
 
-        self.c1 = ff.Sequential(ff.Conv2d(1, 6, kernel_size=kernel_size, padding=2), ff.ReLU(), ff.Conv2d(6, 1, kernel_size=kernel_size), ff.ReLU())
-        self.fc = ff.Sequential(ff.Linear(576, 84), ff.ReLU(), ff.Linear(84, nb_classes))
+        self.c1 = ff.Sequential(ff.Conv2d(1, 3, kernel_size=kernel_size, padding=2), ff.BatchNorm2d(3), ff.ReLU(), ff.MaxPool2d(2), ff.Dropout(p=0.1))
+        self.fc = ff.Sequential(ff.Linear(588, 84), ff.ReLU(), ff.Linear(84, nb_classes))
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -21,14 +21,14 @@ class Net(ff.Module):
     def backward(self, criterion):
         d = criterion.backward()
         d = self.fc.backward(d)
-        d = self.c1.backward(d.view(-1, 1, 24, 24))
+        d = self.c1.backward(d.view(-1, 3, 14, 14))
         return d
 
     def train_(self, \
                 train_input, train_target, \
-                test_input = None, test_target = None, \
-                batch_size = 5, epoch = 50, \
-                eta = 1e-1, criterion = ff.MSELoss(), print_skip = 5):
+                test_input=None, test_target=None, \
+                batch_size=5, epoch=50, \
+                eta=1e-1, criterion=ff.MSELoss(), print_skip=1):
         """
         Training method
         """
@@ -43,7 +43,7 @@ class Net(ff.Module):
                 sum_loss = sum_loss + loss.item()
 
                 self.zero_grad()
-                self.backward(criterion) 
+                self.backward(criterion)
                 for p in self.parameters():
                     p.p -= eta * p.grad
 
@@ -62,7 +62,7 @@ class Net(ff.Module):
             #Save best epoch
             if self.test_error[self.best_epoch] > self.test_error[-1]:
                 self.best_epoch = e
-                self.save()
+                self.save('../model/best-model-conv.pt')
 
         print("** BEST SCORE --> Epoch #{:2d}: \n*  train_error: {:.02f}%, \n*  test_error: {:.02f}%"\
             .format(self.best_epoch, self.train_error[self.best_epoch]*100, self.test_error[self.best_epoch]*100))

@@ -91,3 +91,17 @@ def plot_prediction(input, target, model):
     plt.xlabel('x')
     plt.ylabel('y')
 
+
+def plot_prediction_mnist(input, target, model):
+    if target.ndim == 2:
+    # Convert one_hot to normal prediction
+        target = target.argmax(dim=1)
+    prediction = model(input)
+    classes = torch.unique(target)
+    _, predicted_classes = prediction.max(dim=1)
+    
+    fig, axes = plt.subplots(1, 10, figsize=(12, 3))
+    for ax, im, lb in zip(axes,input[:10], predicted_classes[:10]):
+        ax.imshow(im.view(28,28), cmap='gray')
+        ax.axis('off')
+        ax.set_title(lb)
