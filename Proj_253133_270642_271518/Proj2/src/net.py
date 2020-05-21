@@ -22,7 +22,7 @@ class Net(ff.Module):
         d = self.linear_layers.backward(d)
         return d
 
-    def train(  self, \
+    def train_( self, \
                 train_input, train_target, \
                 test_input = None, test_target = None, \
                 batch_size = 100, epoch = 50, \

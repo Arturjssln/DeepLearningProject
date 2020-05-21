@@ -24,6 +24,9 @@ class Module(object):
     """
     Abstract model of a framework module
     """
+    # Training Mode boolean
+    training = True
+
     def __init__(self):
         # initializing storage of values that can be useful for gradient calculation
         self._store = OrderedDict()
@@ -87,6 +90,18 @@ class Module(object):
         """
         pass
 
+    def train(self):
+        """
+        Set training mode to True
+        """
+        Module.training = True
+
+    def eval(self):
+        """
+        Set training mode to False
+        """
+        Module.training = False
+
     def __repr__(self):
         """
         Representation of the model
@@ -100,20 +115,20 @@ class Module(object):
 
     def __setattr__(self, name, value):
         """
-        Store Module subclasses attribute 
+        Store Module subclasses attribute
         """
         super(Module, self).__setattr__(name, value)
         # If attribut is a Module, add it to the parameters
         if issubclass(type(value), Module):
             self._parameters[name] = value
 
-    def save(self, path='./', filename='parameters'):
+    def save(self, path='parameters.pt'):
         """
         Save parameters of a model
         """
-        torch.save(self._parameters, path + filename + '.pt')
+        torch.save(self._parameters, path)
 
-    def load(self, path='./parameters.pt'):
+    def load(self, path='parameters.pt'):
         """
         Load parameters of a pretrained model
         """
@@ -259,7 +274,7 @@ class MSELoss(Loss):
     def forward(self, *input):
         if len(input) < 2:
             raise RuntimeError(
-                "Too few arguments given. Exactly 2 arguments expected.")
+                "Too few arguments given. Exactly 2 arguments expected, but got {}.".format(len(input)))
         if len(input) > 2:
             warnings.warn(
                 "Input for MSELoss must be composed of exactly two arguments, supplementary arguments are ignored.")
@@ -284,7 +299,7 @@ class CrossEntropyLoss(Loss):
     def forward(self, *input):
         if len(input) < 2:
             raise RuntimeError(
-                "Too few arguments given. Exactly 2 arguments expected.")
+                "Too few arguments given. Exactly 2 arguments expected, but got {}.".format(len(input)))
         if len(input) > 2:
             warnings.warn(
                 "Input for CrossEntropyLoss must be composed of exactly two arguments, supplementary arguments are ignored.")
@@ -417,7 +432,7 @@ class Conv2D(Layer):
         return dx[:, :, self.padding:-self.padding, self.padding:-self.padding]
 
 
-class MaxPool2D(Module):
+class MaxPool2D(Layer):
     def __init__(self, kernel_size=(2, 2)):
         super(MaxPool2D, self).__init__()
         self.kernel_size = (kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size
@@ -445,6 +460,7 @@ class MaxPool2D(Module):
         _, _, H, W = tuple(x.size())
         KH, KW = self.kernel_size
         grad = torch.zeros_like(x)
+        # Local derivative is 1 if it is a maximum, 0 otherwise
         for h, w in product(range(0, H//KH), range(0, W//KW)):
             h_offset, w_offset = h*KH, w*KW
             for kh, kw in product(range(KH), range(KW)):
@@ -457,6 +473,84 @@ class MaxPool2D(Module):
         dout = torch.repeat_interleave(torch.repeat_interleave(dout, self.kernel_size[0], dim=2), self.kernel_size[1], dim=3)
         return self._grad['x'] * dout
 
+
+class BatchNorm2D(Layer):
+    def __init__(self, num_features, eps=1e-5):
+        super().__init__()
+        self.eps = eps
+        self.num_features = num_features
+        self._init_params()
+
+    def _init_params(self):
+        self._params['gamma'] = Parameter(torch.ones(shape=(1, self.num_features, 1, 1)))
+        self._params['beta'] = Parameter(torch.zeros(shape=(1, self.num_features, 1, 1)))
+
+    def forward(self, *input):
+        if len(input) > 1:
+            warnings.warn(
+                "Input for MaxPool2D must be composed of only one element, supplementary arguments are ignored.")
+        x = input[0]
+        mu = torch.mean(x, dim=(2, 3), keepdim=True)
+        xmu = x - mu
+        var = torch.var(x, dim=(2, 3), keepdim=True) + self.eps
+        ivar = 1.0/torch.sqrt(var)
+        xhat = xmu * ivar
+        gammax = self._params['gamma'].p * xhat
+        out = gammax + self._params['beta'].p
+
+        self._store['xmu'] = xmu
+        self._store['var'] = var
+        self._store['ivar'] = ivar
+        self._store['xhat'] = xhat
+        return out
+
+    def backward(self, *gradwrtoutput):
+        dout = gradwrtoutput[0]
+        dgamma = torch.sum(self.cache['xhat'] * dout, dim=(0, 2, 3), keepdim=True)
+        dbeta = torch.sum(dout, dim=(0, 2, 3), keepdim=True)
+        self._params['gamma'].grad += dgamma
+        self._params['beta'].grad += dbeta
+
+        N = self.num_features
+        dx = (1.0 / N) * self._params['gamma'].p * self._store['ivar'] * (N * dout - dbeta - self._store['xmu'] / \
+            self._store['var'] * torch.sum(self.cache['xmu'] * dout, dim=(0, 2, 3), keepdim=True))
+        return dx
+
+
+class Dropout(Layer):
+    def __init__(self, p=0.5, inplace=False):
+        super(Dropout, self).__init__()
+        if p < 0 or p > 1:
+            raise ValueError("Dropout probability has to be between 0 and 1, but got {}".format(p))
+        self.p = p
+        self.inplace = inplace
+
+    def forward(self, *input):
+        if len(input) > 1:
+            warnings.warn(
+                "Input for Dropout must be composed of only one element, supplementary arguments are ignored.")
+        x = input[0]
+        # If mode eval, dropout do nothing
+        if not Module.training:
+            self._store['drop'] = torch.ones_like(x)
+            return x
+
+        drop = (torch.empty(x.size()).uniform_() > self.p).type(torch.IntTensor)
+        if self.inplace:
+            x *= drop
+            out = x
+        else:
+            out = x * drop
+
+        self._store['drop'] = drop
+        return out
+
+    def local_grad(self):
+        return {'x': self._store['drop']}
+
+    def backward(self, *gradwrtoutput):
+        dout = gradwrtoutput[0]
+        return self._grad['x'] * dout
 
 
 #### UTILITY FUNCTION ####

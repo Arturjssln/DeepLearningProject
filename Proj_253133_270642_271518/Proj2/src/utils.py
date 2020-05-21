@@ -1,6 +1,9 @@
 import math
 import torch 
 import matplotlib.pyplot as plt
+from torchvision import datasets
+
+data_dir = '../data'
 
 def generate_set(nb, one_hot):
     input = torch.empty(nb, 2).uniform_(0, 1)
@@ -24,6 +27,30 @@ def convert_to_one_hot_labels(input, target):
     tmp = input.new_zeros(target.size(0), target.max() + 1)
     tmp.scatter_(1, target.view(-1, 1), 1.0)
     return tmp
+
+def load_data(flatten = False, one_hot_labels = False, normalize = False):
+    mnist_train_set = datasets.MNIST(data_dir + '/mnist/', train=True, download=True)
+    mnist_test_set = datasets.MNIST(data_dir + '/mnist/', train=False, download=True)
+
+    train_input = mnist_train_set.data.view(-1, 1, 28, 28).float()
+    train_target = mnist_train_set.targets
+    test_input = mnist_test_set.data.view(-1, 1, 28, 28).float()
+    test_target = mnist_test_set.targets
+
+    if flatten:
+        train_input = train_input.clone().reshape(train_input.size(0), -1)
+        test_input = test_input.clone().reshape(test_input.size(0), -1)
+
+    if one_hot_labels:
+        train_target = convert_to_one_hot_labels(train_input, train_target)
+        test_target = convert_to_one_hot_labels(test_input, test_target)
+
+    if normalize:
+        mu, std = train_input.mean(), train_input.std()
+        train_input.sub_(mu).div_(std)
+        test_input.sub_(mu).div_(std)
+
+    return train_input, train_target, test_input, test_target
 
 def plot_results(train_losses, train_errors, test_errors):
 
@@ -63,3 +90,4 @@ def plot_prediction(input, target, model):
                mode="expand", borderaxespad=0, ncol=3)
     plt.xlabel('x')
     plt.ylabel('y')
+

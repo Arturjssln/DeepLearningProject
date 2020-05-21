@@ -31,7 +31,7 @@ model = Net(nb_nodes = 25)
 print(model)
 print('Using : {}Loss\n'.format(args.loss))
 ## Training model
-model.train(train_input, train_target, test_input, test_target, epoch=100, eta = 1e-1, criterion=loss)
+model.train_(train_input, train_target, test_input, test_target, epoch=100, eta = 1e-1, criterion=loss)
 ## Ploting results of model at the end of training
 plot_results(model.sumloss, model.train_error, model.test_error)
 plot_prediction(test_input, test_target, model)
