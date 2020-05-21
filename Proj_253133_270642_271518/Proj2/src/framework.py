@@ -182,7 +182,7 @@ class Layer(Module):
         super(Layer, self).__init__()
         self._params = {}
 
-    def _init_params(self, *args):
+    def _init_params(self):
         """
         Initializes the params.
         """
@@ -205,17 +205,17 @@ class Linear(Layer):
     """
     def __init__(self, dim_in, dim_out):
         super(Linear, self).__init__()
-        self.in_dim = dim_in
-        self.out_dim = dim_out
-        self._init_params(dim_in, dim_out)
+        self.dim_in = dim_in
+        self.dim_out = dim_out
+        self._init_params()
 
-    def _init_params(self, dim_in, dim_out):
+    def _init_params(self):
         """
         Initialize weights and bias
         """
-        scale = 1 / math.sqrt(dim_in)
-        self._params['W'] = Parameter(torch.empty(dim_in, dim_out).uniform_(-scale, scale))
-        self._params['b'] = Parameter(torch.empty(1, dim_out).uniform_(-scale, scale))
+        scale = 1 / math.sqrt(self.dim_in)
+        self._params['W'] = Parameter(torch.empty(self.dim_in, self.dim_out).uniform_(-scale, scale))
+        self._params['b'] = Parameter(torch.empty(1, self.dim_out).uniform_(-scale, scale))
 
     def forward(self, *input):
         if len(input) > 1:
@@ -240,7 +240,7 @@ class Linear(Layer):
         return dx
 
     def __repr__(self):
-        return "Linear({}, {})".format(self.in_dim, self.out_dim)
+        return "Linear({}, {})".format(self.dim_in, self.dim_out)
 
 class Loss(Module):
     """
@@ -361,12 +361,12 @@ class Conv2D(Layer):
         self.stride = stride
         self.kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
         self.padding = padding
-        self._init_params(channel_in, channel_out, self.kernel_size)
+        self._init_params()
 
-    def _init_params(self, channel_in, channel_out, kernel_size):
-        scale = 2/math.sqrt(channel_in*kernel_size[0]*kernel_size[1])
-        self._params['W'] = Parameter(torch.empty(size=(channel_out, channel_in, *kernel_size)).normal_(std=scale))
-        self._params['b'] = Parameter(torch.zeros(channel_out, 1))
+    def _init_params(self):
+        scale = 2/math.sqrt(self.channel_in*self.kernel_size[0]*self.kernel_size[1])
+        self._params['W'] = Parameter(torch.empty(size=(self.channel_out, self.channel_in, *self.kernel_size)).normal_(std=scale))
+        self._params['b'] = Parameter(torch.zeros(self.channel_out, 1))
 
     def forward(self, *input):
         if len(input) > 1:
