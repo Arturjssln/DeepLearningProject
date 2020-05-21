@@ -440,10 +440,10 @@ class MaxPool2D(Module):
         return out
     
     def local_grad(self):
-        N, C, H, W = tuple(x.size())
-        KH, KW = self.kernel_size
         x = self._store['x']
         out = self._store['out']
+        _, _, H, W = tuple(x.size())
+        KH, KW = self.kernel_size
         grad = torch.zeros_like(x)
         for h, w in product(range(0, H//KH), range(0, W//KW)):
             h_offset, w_offset = h*KH, w*KW
