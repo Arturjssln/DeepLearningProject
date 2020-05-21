@@ -14,7 +14,7 @@ conda install pytorch torchvision -c pytorch
 ```
 
 ## Usage
-To run our linear model, run the following command from the src directory:
+Run the following command from the src directory:
 ```bash
 python test.py
 

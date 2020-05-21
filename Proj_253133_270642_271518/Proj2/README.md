@@ -22,7 +22,7 @@ linear_layer = ff.Linear(100, 10)
 conv_layer = ff.Conv2d(1, 3, kernel_size=2, padding=2, stride=2)
 ```
 ### Run example
-To run our linear model, run the following command from the src directory:
+To run our **linear model**, run the following command from the src directory:
 ```bash
 python test.py
 
@@ -32,7 +32,7 @@ Options:
     --notrain      Load best stored model and display its prediction on the test_data.
 ```
 
-To run our convolutional model, run the following command from the src directory:
+To run our **convolutional model**, run the following command from the src directory:
 ```bash
 python test_conv.py
 
