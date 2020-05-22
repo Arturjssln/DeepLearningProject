@@ -75,7 +75,7 @@ nb_nodes = None
 
 # Number of repetition
 
-rep = 20
+rep = 10
 
 # Learning rate
 eta = 1e-1
@@ -84,10 +84,7 @@ nb_classes = 10
 if args.architecture == 'linear':
     nb_nodes = args.nodes
     args.auxloss = False
-    if args.deep:
-        nb_linear_layers = 2
-    else:
-        nb_linear_layers = 1
+    nb_linear_layers = 2
 
     print("*  Linear neural network with {} fully connected hidden layer with {} nodes.".format(nb_linear_layers, nb_nodes))
 

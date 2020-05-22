@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description='Project 2 - NN Framework.')
 parser.add_argument('--loss',
                     type=str, default='MSE',
                     help='Loss to use (available: CrossEntropy, MSE; default: MSE)')
-parser.add_argument('--notrain',
+parser.add_argument('--no_train',
                     action='store_true', default=False,
                     help='Don\'t train the neural network')
 args = parser.parse_args()
@@ -32,7 +32,7 @@ train_input, train_target, test_input, test_target, test_input_raw = generate_da
 ## Create model
 model = Net(nb_nodes = 25)
 print(model)
-if args.notrain:
+if args.no_train:
     ## Load best model
     model.load('../model/best-model.pt')
     model.eval()  # Set model to eval mode
