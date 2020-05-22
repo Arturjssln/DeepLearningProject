@@ -495,8 +495,9 @@ class BatchNorm2d(Layer):
     def _init_params(self):
         self._params['gamma'] = Parameter(torch.ones(size=(1, self.num_features, 1, 1)))
         self._params['beta'] = Parameter(torch.zeros(size=(1, self.num_features, 1, 1)))
-        self._mu_av = torch.zeros(size=(1, self.num_features, 1, 1))
-        self._var_av = torch.zeros(size=(1, self.num_features, 1, 1))
+        # Empirical moments - grad always zero, never updated
+        self._params['mu_av'] = Parameter(torch.zeros(size=(1, self.num_features, 1, 1)))
+        self._params['var_av'] = Parameter(torch.zeros(size=(1, self.num_features, 1, 1)))
 
     def forward(self, *input):
         if len(input) > 1:
@@ -507,11 +508,11 @@ class BatchNorm2d(Layer):
             mu = torch.mean(x, dim=(2, 3), keepdim=True)
             var = torch.var(x, dim=(2, 3), keepdim=True) + self.eps
             # Calculate empirical moments
-            self._mu_av = 0.1 * torch.mean(mu, dim=0, keepdim=True) + 0.9 * self._mu_av
-            self._var_av = 0.1 * torch.mean(var, dim=0, keepdim=True) + 0.9 * self._var_av
+            self._params['mu_av'].p = 0.1 * torch.mean(mu, dim=0, keepdim=True) + 0.9 * self._params['mu_av'].p
+            self._params['var_av'].p = 0.1 * torch.mean(var, dim=0, keepdim=True) + 0.9 * self._params['var_av'].p
         else:
-            mu = self._mu_av
-            var = self._var_av
+            mu = self._params['mu_av'].p
+            var = self._params['var_av'].p
         xmu = x - mu
         ivar = 1.0/torch.sqrt(var)
         xhat = xmu * ivar

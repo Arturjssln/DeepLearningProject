@@ -35,6 +35,7 @@ print(model)
 if args.notrain:
     ## Load best model
     model.load('../model/best-model.pt')
+    model.eval()  # Set model to eval mode
     ## Ploting results of best model
     plot_prediction(test_input, test_target, model)
     plt.suptitle('Prediction of the best model')
@@ -43,6 +44,7 @@ else:
     print('Using : {}Loss\n'.format(args.loss))
     ## Training model
     model.train_(train_input, train_target, test_input, test_target, epoch=100, eta=1e-1, criterion=loss)
+    model.eval()  # Set model to eval mode
     ## Ploting results of model at the end of training
     plot_results(model.sumloss, model.train_error, model.test_error)
     plot_prediction(test_input, test_target, model)

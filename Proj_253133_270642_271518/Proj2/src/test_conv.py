@@ -29,6 +29,7 @@ if args.train:
     ## Training model
     torch.manual_seed(3)
     model.train_(train_input, train_target, test_input, test_target, epoch=5, eta=1e-1, criterion=loss)
+    model.eval()  # Set model to eval mode
     ## Ploting results of model at the end of training
     plot_results(model.sumloss, model.train_error, model.test_error)
     plot_prediction_mnist(test_input, test_target, model)
@@ -37,6 +38,7 @@ if args.train:
 else:
     ## Load best model
     model.load('../model/best-model-conv.pt')
+    model.eval() # Set model to eval mode
     ## Ploting results of best model
     plot_prediction_mnist(test_input, test_target, model)
     plt.suptitle('Prediction of the best model')
