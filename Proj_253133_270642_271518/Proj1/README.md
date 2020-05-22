@@ -4,14 +4,29 @@
 torch  
 torchvision  
 
+### If you have a CUDA capable GPU 
 For Linux and Windows, run the following command:
 ```
 conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
 ```
-For MacOS, run the following command:
+
+For MacOS, run the following command (doesn't support CUDA):
 ```
 conda install pytorch torchvision -c pytorch
 ```
+
+### If you want to run on CPU only
+For Linux and Windows, run the following command:
+```
+conda install pytorch torchvision cpuonly -c pytorch
+```
+
+For MacOS, run the following command (doesn't support CUDA):
+```
+conda install pytorch torchvision -c pytorch
+```
+
+For any other installation (through PIP of LibTorch) please follow this link: https://pytorch.org
 
 ## Usage
 Run the following command from the src directory:

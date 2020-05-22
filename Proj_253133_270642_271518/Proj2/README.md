@@ -4,14 +4,30 @@
 torch  
 torchvision  
 
+### If you have a CUDA capable GPU 
 For Linux and Windows, run the following command:
 ```
 conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
 ```
-For MacOS, run the following command:
+
+For MacOS, run the following command (doesn't support CUDA):
 ```
 conda install pytorch torchvision -c pytorch
 ```
+
+### If you want to run on CPU only
+For Linux and Windows, run the following command:
+```
+conda install pytorch torchvision cpuonly -c pytorch
+```
+
+For MacOS, run the following command (doesn't support CUDA):
+```
+conda install pytorch torchvision -c pytorch
+```
+
+For any other installation (through PIP of LibTorch) please follow this link: https://pytorch.org
+
 
 ## Usage
 ### Framework usage
@@ -37,11 +53,14 @@ class Net(ff.Module):
         return d
 
     def train_(self, data, target, \
-            criterion=ff.MSELoss()):
+            criterion=ff.MSELoss(), \
+                eta = 1e-5):
         pred = self(data)
         loss = criterion(pred, target)
         self.zero_grad()
         self.backward(criterion)
+        for p in self.parameters():
+            p.p -= eta * p.grad
         # Do your training stuff here
 ```
 ### Run example
