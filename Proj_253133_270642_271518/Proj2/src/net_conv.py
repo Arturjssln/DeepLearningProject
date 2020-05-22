@@ -71,6 +71,7 @@ class Net(ff.Module):
         '''
         Computing error rate givin an input and its target
         '''
+        self.eval()
         error = 0.0
         for b in range(0, target.size(0), batch_size):
             prediction = self(input.narrow(0, b, batch_size))
@@ -81,4 +82,5 @@ class Net(ff.Module):
                 if pred.item() != t_class:
                     error += 1
         error /= target.size(0)
+        self.train()
         return error

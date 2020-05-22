@@ -1,7 +1,7 @@
 import torch
 import math
-from collections import OrderedDict
 import warnings
+from collections import OrderedDict
 from itertools import product
 
 
@@ -380,7 +380,7 @@ class Conv2d(Layer):
         self._init_params()
 
     def _init_params(self):
-        scale = 2/math.sqrt(self.in_channels*self.kernel_size[0]*self.kernel_size[1])
+        scale = math.sqrt(2.0 / ((self.in_channels+self.out_channels)*self.kernel_size[0]*self.kernel_size[1]))
         self._params['W'] = Parameter(torch.empty(size=(self.out_channels, self.in_channels, *self.kernel_size)).normal_(std=scale))
         self._params['b'] = Parameter(torch.zeros(self.out_channels, 1))
 
@@ -448,7 +448,7 @@ class MaxPool2d(Layer):
     def forward(self, *input):
         if len(input) > 1:
             warnings.warn(
-                "Input for MaxPool2D must be composed of only one element, supplementary arguments are ignored.")
+                "Input for MaxPool2d must be composed of only one element, supplementary arguments are ignored.")
         x = input[0]
         N, C, H, W = tuple(x.size())
         KH, KW = self.kernel_size
@@ -495,15 +495,24 @@ class BatchNorm2d(Layer):
     def _init_params(self):
         self._params['gamma'] = Parameter(torch.ones(size=(1, self.num_features, 1, 1)))
         self._params['beta'] = Parameter(torch.zeros(size=(1, self.num_features, 1, 1)))
+        self._mu_av = torch.zeros(size=(1, self.num_features, 1, 1))
+        self._var_av = torch.zeros(size=(1, self.num_features, 1, 1))
 
     def forward(self, *input):
         if len(input) > 1:
             warnings.warn(
-                "Input for MaxPool2D must be composed of only one element, supplementary arguments are ignored.")
+                "Input for MaxPool2d must be composed of only one element, supplementary arguments are ignored.")
         x = input[0]
-        mu = torch.mean(x, dim=(2, 3), keepdim=True)
+        if Module.training:
+            mu = torch.mean(x, dim=(2, 3), keepdim=True)
+            var = torch.var(x, dim=(2, 3), keepdim=True) + self.eps
+            # Calculate empirical moments
+            self._mu_av = 0.1 * torch.mean(mu, dim=0, keepdim=True) + 0.9 * self._mu_av
+            self._var_av = 0.1 * torch.mean(var, dim=0, keepdim=True) + 0.9 * self._var_av
+        else:
+            mu = self._mu_av
+            var = self._var_av
         xmu = x - mu
-        var = torch.var(x, dim=(2, 3), keepdim=True) + self.eps
         ivar = 1.0/torch.sqrt(var)
         xhat = xmu * ivar
         gammax = self._params['gamma'].p * xhat
