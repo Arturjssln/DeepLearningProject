@@ -52,7 +52,7 @@ class Net(nn.Module):
 
         # ResNet architecture
         elif architecture == 'resnet':
-            self.do = nn.Dropout()  # RATE TO DEFINE (default=0.5)
+            self.do = nn.Dropout()
             self.batch_normalization = batch_normalization
             self.conv = nn.Conv2d(1, nb_channels, kernel_size = kernel_size, padding = (kernel_size - 1) // 2)
             if batch_normalization:
@@ -66,7 +66,7 @@ class Net(nn.Module):
         # LeNet architecture
         elif architecture == 'lenet':
             self.batch_normalization = batch_normalization
-            self.do = nn.Dropout() # RATE TO DEFINE (default=0.5)
+            self.do = nn.Dropout()
 
             if batch_normalization:
                 if kernel_size == 3:

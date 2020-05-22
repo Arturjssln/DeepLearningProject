@@ -27,7 +27,7 @@ else:
 DATASET_SIZE = 1000
 
 ## Generate dataset
-train_input, train_target, test_input, test_target = generate_data(DATASET_SIZE, one_hot=ONE_HOT, normalize=True)
+train_input, train_target, test_input, test_target, test_input_raw = generate_data(DATASET_SIZE, one_hot=ONE_HOT, normalize=True)
 
 ## Create model
 model = Net(nb_nodes = 25)
@@ -37,7 +37,7 @@ if args.notrain:
     model.load('../model/best-model.pt')
     model.eval()  # Set model to eval mode
     ## Ploting results of best model
-    plot_prediction(test_input, test_target, model)
+    plot_prediction(test_input, test_input_raw, test_target, model)
     plt.suptitle('Prediction of the best model')
     plt.show()
 else:
@@ -47,6 +47,6 @@ else:
     model.eval()  # Set model to eval mode
     ## Ploting results of model at the end of training
     plot_results(model.sumloss, model.train_error, model.test_error)
-    plot_prediction(test_input, test_target, model)
+    plot_prediction(test_input, test_input_raw, test_target, model)
     plt.suptitle('Prediction of the trained model')
     plt.show()

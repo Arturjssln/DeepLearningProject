@@ -370,6 +370,9 @@ class Sequential(Module):
 
 
 class Conv2d(Layer):
+    """
+    Conv2d Module
+    """
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
         super(Conv2d, self).__init__()
         self.in_channels = in_channels
@@ -380,6 +383,9 @@ class Conv2d(Layer):
         self._init_params()
 
     def _init_params(self):
+        """
+        Parameter initialization following 'Xavier initialization'
+        """
         scale = math.sqrt(2.0 / ((self.in_channels+self.out_channels)*self.kernel_size[0]*self.kernel_size[1]))
         self._params['W'] = Parameter(torch.empty(size=(self.out_channels, self.in_channels, *self.kernel_size)).normal_(std=scale))
         self._params['b'] = Parameter(torch.zeros(self.out_channels, 1))
@@ -441,6 +447,9 @@ class Conv2d(Layer):
 
 
 class MaxPool2d(Layer):
+    """
+    MaxPool2d Module
+    """
     def __init__(self, kernel_size=(2, 2)):
         super(MaxPool2d, self).__init__()
         self.kernel_size = (kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size
@@ -486,6 +495,9 @@ class MaxPool2d(Layer):
 
 
 class BatchNorm2d(Layer):
+    """
+    BatchNorm2d Module
+    """
     def __init__(self, num_features, eps=1e-5):
         super(BatchNorm2d, self).__init__()
         self.eps = eps
@@ -542,6 +554,9 @@ class BatchNorm2d(Layer):
 
 
 class Dropout(Layer):
+    """
+    Dropout Module
+    """
     def __init__(self, p=0.5, inplace=False):
         super(Dropout, self).__init__()
         if p < 0 or p > 1:

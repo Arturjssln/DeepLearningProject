@@ -131,7 +131,7 @@ def plot_results(train_losses, train_errors, test_errors, goal_errors, force_err
     plt.ylabel('Error rate (in %)')
 
     if force_error_axis:
-        plt.ylim(0, 100)
+        plt.ylim(0, 45)
     if save is True:
         plt.savefig('{}.png'.format(save_title))
     else:
@@ -164,7 +164,7 @@ def plot_training(train_losses, train_errors, test_errors, goal_errors):
     plt.legend(['Train', 'Test (number prediction)', 'Test (goal prediction)'])
     plt.xlabel('Epoch')
     plt.ylabel('Error rate (in %)')
-    plt.ylim(0, 100)
+    plt.ylim(0, 45)
     plt.show()
 
 

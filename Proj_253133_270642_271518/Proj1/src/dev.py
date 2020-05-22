@@ -10,83 +10,58 @@ import argparse
 parser = argparse.ArgumentParser(description='Project 1 - Classification.')
 
 parser.add_argument('--datasize',
-                    type = int, default = 1000,
-                    help = 'Number of pairs used for training and for testing (default: 1000)')
+                    type=int, default=1000,
+                    help='Number of pairs used for training and for testing; default: 1000')
 
 parser.add_argument('--architecture',
-                    type = str, default = 'linear',
-                    help = 'Architecture of Neural Network to use (can be ????; default: ????)')
-
-parser.add_argument('--loss',
-                    type = str, default = None,
-                    help = 'Loss used to train Neural Network (can be MSE, ????; default: crossentropy)')
+                    type=str, default='resnet',
+                    help='Architecture of Neural Network to use (can be linear, lenet, resnet, alexnet; default: resnet)')
 
 parser.add_argument('--residual',
                     action='store_true', default=False,
-                    help = 'Use residual Neural Network (default: False)')
+                    help='Use residual Neural Network')
 
 parser.add_argument('--bn',
                     action='store_true', default=False,
-                    help = 'Use batch normalization (default: False)')
+                    help='Use batch normalization')
 
 parser.add_argument('--nodes',
-                    type = int, default = 32,
-                    help = 'Number of nodes (ignored if architecture is not linear; default: 32)')
+                    type=int, default=32,
+                    help='Number of nodes (ignored if architecture is not linear; default: 32)')
 
 parser.add_argument('--epoch',
-                    type = int, default = 25,
-                    help = 'Number of epoch (default: 25)')
-
-parser.add_argument('--deep',
-                    action='store_true', default=False,
-                    help = 'Use deep Neural Network (ignored if architecture is not linear; default: False)')
+                    type=int, default=25,
+                    help='Number of epoch (default: 25)')
 
 parser.add_argument('--optimizer',
-                    type = str, default = None,
-                    help = 'Define optimizer to use (can be MSE, Adam; default: None)')
+                    type=str, default=None,
+                    help='Define optimizer to use (can be MSE, Adam; default: None)')
 
 parser.add_argument('--dropout',
                     action='store_true', default=False,
-                    help = 'Use dropout (default: False)')
-
-parser.add_argument('--save_fig',
-                    action='store_true', default=False,
-                    help = 'Save figure to png')
+                    help='Use dropout')
 
 parser.add_argument('--nb_residual_blocks',
-                    type = int, default = 1, #To Define
-                    help = 'If Resnet selected - change number of residual blocks (default is 1)')
+                    type=int, default=2,
+                    help='If Resnet selected - change number of residual blocks (default is 2)')
 
 parser.add_argument('--nb_channels',
-                    type = int, default = 6, #To Define
-                    help = 'If Resnet selected - change number of channels (default is 6)')
+                    type=int, default=16,
+                    help='If Resnet selected - change number of channels (default is 16)')
 
 parser.add_argument('--kernel_size',
-                    type = int, default = 3, #To Define
-                    help = 'If Resnet selected - change kernel size (default is 3)')
-
-parser.add_argument('--force_axis',
-                    action='store_true', default=False,
-                    help = 'Used for plotting, if selected, axis is not automatically scalled (default is false)')
+                    type=int, default=7,
+                    help='If Resnet selected - change kernel size (default is 7)')
 
 parser.add_argument('--auxloss',
                     action='store_true', default=False,
-                    help = 'Use auxiliary loss (default is false)')
+                    help='Use auxiliary loss')
 
 
 args = parser.parse_args()
 
+loss = nn.CrossEntropyLoss()
 
-## Determine loss used
-if args.loss is None or args.loss == 'crossentropy':
-    # Default loss
-    loss = nn.CrossEntropyLoss()
-elif args.loss == 'MSE':
-    # MSE loss
-    loss = nn.MSELoss()
-    raise NotImplementedError
-else:
-    raise ValueError
 
 
 print("** Model chosen: **")
@@ -217,7 +192,7 @@ for i in range(rep):
 #DEFAULT
 #plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, best = best)
 #RESNET
-plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Resnet-{} channels-{} residual-{} kernelsize".format(nb_channels, nb_residual_blocks, kernel_size), best = best)
+plot_results(train_losses, train_errors, test_errors, goal_errors, True, True, "Resnet-{} channels-{} residual-{} kernelsize".format(nb_channels, nb_residual_blocks, kernel_size), best = best)
 #LENET
 #plot_results(train_losses, train_errors, test_errors, goal_errors, args.force_axis, args.save_fig, "Lenet-Kernelsize {}-BatchNorm {}-Dropout {}-Aux loss {}".format(kernel_size, args.bn, args.dropout, args.auxloss), best = best)
 #LINEAR
