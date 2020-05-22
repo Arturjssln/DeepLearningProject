@@ -61,10 +61,33 @@ conda install pytorch torchvision -c pytorch
 ## Usage
 ### Framework usage
 ```python
+import torch
 import framework as ff
 
-linear_layer = ff.Linear(100, 10)
-conv_layer = ff.Conv2d(1, 3, kernel_size=2, padding=2, stride=2)
+class Net(ff.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.layer = ff.Sequential(
+            ff.Linear(10, 200), 
+            ff.ReLU(), 
+            ff.Linear(200, 10))
+
+    def forward(self, x):
+        x = self.layer(x)
+        return x
+
+    def backward(self, criterion):
+        d = criterion.backward()
+        d = self.layer.backward(d)
+        return d
+
+    def train_(self, data, target, \
+            criterion=ff.MSELoss()):
+        pred = self(data)
+        loss = criterion(pred, target)
+        self.zero_grad()
+        self.backward(criterion)
+        # Do your training stuff here
 ```
 ### Run example
 To run our **linear model**, run the following command from the src directory:
