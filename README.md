@@ -1,5 +1,12 @@
 # DeepLearningProjects
 
+This repository contains 2 projects:
+- **Project 1**:  
+It implements differents Neural Networks architecutre to compare their accuracy on MNIST dataset.
+
+- **Project 2**:  
+It implements a basic Neural Network framework that can be used similarly to the one implemented in Pytorch.
+
 # Project 1 – Classification, weight sharing, auxiliary losses
 
 ## Requirements
