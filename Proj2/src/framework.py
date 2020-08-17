@@ -582,12 +582,12 @@ class Dropout(Layer):
         else:
             out = x * drop / (1 - self.p)
 
-        self._store['drop'] = drop
+        self._store['drop'] = drop * (1-self.p)
         return out
 
     def local_grad(self):
         # Usage of inverted dropout
-        return {'x': self._store['drop'] * (1-self.p)}
+        return {'x': self._store['drop']}
 
     def backward(self, *gradwrtoutput):
         dout = gradwrtoutput[0]
