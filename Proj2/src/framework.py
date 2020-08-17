@@ -575,17 +575,19 @@ class Dropout(Layer):
             return x
 
         drop = (torch.empty(x.size()).uniform_() > self.p).type(torch.IntTensor)
+        # Usage of inverted dropout
         if self.inplace:
-            x *= drop
+            x *= drop / (1 - self.p)
             out = x
         else:
-            out = x * drop
+            out = x * drop / (1 - self.p)
 
         self._store['drop'] = drop
         return out
 
     def local_grad(self):
-        return {'x': self._store['drop']}
+        # Usage of inverted dropout
+        return {'x': self._store['drop'] * (1-self.p)}
 
     def backward(self, *gradwrtoutput):
         dout = gradwrtoutput[0]
